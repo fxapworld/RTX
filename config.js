@@ -4,14 +4,13 @@ const CONFIG = {
     // Deploy server.js (Render, Railway, Fly.io, VPS) and paste its public URL here — required for real payments.
     // Stripe Dashboard → Webhooks → Endpoint = https://YOUR-API-HOST/api/webhook (not Discord).
     // Discord purchase alerts: set DISCORD_PURCHASE_WEBHOOK_URL only in server .env (not in config.js).
-    apiBaseUrl: 'YOUR_API_URL',
+    apiBaseUrl: 'https://rtx-api.onrender.com',
 
     discord: {
         clientId: '1439043142086164633',
         redirectUri: 'https://fxapworld.github.io/RTX/',
         scope: 'identify guilds.join',
-        guildId: 'YOUR_DISCORD_SERVER_ID',
-        botToken: 'YOUR_DISCORD_BOT_TOKEN'
+        guildId: '1395934062056833156'
     },
 
     // Publishable key is safe in the browser (optional — only if you add Stripe.js features later).

@@ -7,7 +7,7 @@ const CONFIG = {
     apiBaseUrl: 'YOUR_API_URL',
 
     discord: {
-        clientId: 'YOUR_DISCORD_CLIENT_ID',
+        clientId: '1439043142086164633',
         redirectUri: 'https://fxapworld.github.io/RTX/',
         scope: 'identify guilds.join',
         guildId: 'YOUR_DISCORD_SERVER_ID',

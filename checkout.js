@@ -2,9 +2,17 @@
 
 let paypalButtonsRendered = false;
 
+/** Production API when GitHub Pages serves a cached old config.js */
+const RTX_DEFAULT_API = 'https://rtx-api.onrender.com';
+
 function getApiBase() {
-    const url = CONFIG.apiBaseUrl;
-    if (!url || url === 'YOUR_API_URL') return '';
+    let url = typeof CONFIG !== 'undefined' && CONFIG.apiBaseUrl ? CONFIG.apiBaseUrl : '';
+    if (!url || url === 'YOUR_API_URL') {
+        if (typeof location !== 'undefined' && /\.github\.io$/i.test(location.hostname)) {
+            return RTX_DEFAULT_API.replace(/\/$/, '');
+        }
+        return '';
+    }
     return url.replace(/\/$/, '');
 }
 

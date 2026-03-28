@@ -1,210 +1,408 @@
-// Optional backend template for RTX (payments, Discord, file delivery)
-// This is a Node.js/Express backend to handle payments and Discord integration
-// Install dependencies: npm install express stripe cors dotenv node-fetch
+/**
+ * RTX payment API — deploy separately from GitHub Pages (Render, Railway, Fly.io, VPS).
+ *
+ * Stripe Dashboard → Webhooks → Endpoint URL must be YOUR API:
+ *   https://YOUR-HOST/api/webhook
+ * (NOT a Discord URL — Discord is notified via DISCORD_PURCHASE_WEBHOOK_URL below.)
+ *
+ * Env: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, FRONTEND_URL,
+ *       DISCORD_PURCHASE_WEBHOOK_URL (optional staff notifications)
+ */
 
 const express = require('express');
 const cors = require('cors');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 require('dotenv').config();
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const fetch = require('node-fetch');
 
-// Middleware
-app.use(cors({
-    origin: process.env.FRONTEND_URL // Your GitHub Pages URL
-}));
-app.use(express.json());
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const stripe = STRIPE_SECRET_KEY ? require('stripe')(STRIPE_SECRET_KEY) : null;
 
-// Discord configuration
+const FRONTEND_URL = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+let FRONTEND_ORIGIN = null;
+try {
+    if (FRONTEND_URL) FRONTEND_ORIGIN = new URL(FRONTEND_URL).origin;
+} catch (e) {
+    console.warn('Invalid FRONTEND_URL', e.message);
+}
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
+const PAYPAL_MODE = (process.env.PAYPAL_MODE || 'live').toLowerCase() === 'sandbox' ? 'sandbox' : 'live';
+const PAYPAL_API = PAYPAL_MODE === 'sandbox'
+    ? 'https://api-m.sandbox.paypal.com'
+    : 'https://api-m.paypal.com';
+
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
+const DISCORD_PURCHASE_WEBHOOK_URL = process.env.DISCORD_PURCHASE_WEBHOOK_URL;
 
-// Create payment intent
-app.post('/api/create-payment-intent', async (req, res) => {
+const app = express();
+
+app.use(cors({
+    origin: (origin, cb) => {
+        if (!origin) return cb(null, true);
+        if (!FRONTEND_ORIGIN) return cb(null, true);
+        if (origin === FRONTEND_ORIGIN) return cb(null, true);
+        return cb(null, false);
+    },
+    credentials: true
+}));
+
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    if (!stripe) return res.status(503).send('Stripe not configured');
+
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    let event;
     try {
-        const { amount, items, userId } = req.body;
-        
-        // Create a payment intent
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(amount * 100), // Convert to cents
-            currency: 'usd',
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err) {
+        console.error('Webhook signature:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        let items = [];
+        try {
+            if (session.metadata && session.metadata.items) {
+                items = JSON.parse(session.metadata.items);
+            }
+        } catch (e) {
+            console.error('metadata.items parse', e);
+        }
+        const userId = session.metadata && session.metadata.userId;
+        await notifyPurchaseToDiscordWebhook(session, items);
+        await processOrder(userId, items);
+    }
+
+    res.json({ received: true });
+});
+
+app.use(express.json());
+
+app.post('/api/create-checkout-session', async (req, res) => {
+    if (!stripe) {
+        return res.status(503).json({ error: 'Stripe is not configured (missing STRIPE_SECRET_KEY)' });
+    }
+    if (!FRONTEND_URL) {
+        return res.status(500).json({ error: 'FRONTEND_URL is not set on the server' });
+    }
+
+    try {
+        const { items, userId, username } = req.body;
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'No items in cart' });
+        }
+
+        const line_items = items.map((item) => ({
+            price_data: {
+                currency: 'usd',
+                product_data: {
+                    name: item.name || 'RTX item',
+                    metadata: { product_id: String(item.id || '') }
+                },
+                unit_amount: Math.round(Number(item.price) * 100)
+            },
+            quantity: 1
+        }));
+
+        const compactItems = items.map((i) => ({
+            id: i.id,
+            name: i.name,
+            price: i.price
+        }));
+        let itemsJson = JSON.stringify(compactItems);
+        if (itemsJson.length > 450) {
+            itemsJson = JSON.stringify(items.map((i) => i.id));
+        }
+
+        const session = await stripe.checkout.sessions.create({
+            mode: 'payment',
+            line_items,
+            success_url: `${FRONTEND_URL}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${FRONTEND_URL}/?checkout=cancel`,
             metadata: {
-                userId: userId,
-                items: JSON.stringify(items)
+                userId: userId || '',
+                username: username || '',
+                items: itemsJson
+            },
+            customer_email: undefined,
+            automatic_tax: { enabled: false }
+        });
+
+        res.json({ url: session.url, id: session.id });
+    } catch (error) {
+        console.error('create-checkout-session', error);
+        res.status(500).json({ error: error.message || 'Failed to create session' });
+    }
+});
+
+async function paypalAccessToken() {
+    const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
+    const res = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Basic ${auth}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'grant_type=client_credentials'
+    });
+    const data = await res.json();
+    if (!data.access_token) {
+        throw new Error(data.error_description || 'PayPal auth failed');
+    }
+    return data.access_token;
+}
+
+app.post('/api/paypal/create-order', async (req, res) => {
+    if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+        return res.status(503).json({ error: 'PayPal is not configured on the server' });
+    }
+
+    try {
+        const { items } = req.body;
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'No items' });
+        }
+
+        const total = items.reduce((s, i) => s + Number(i.price || 0), 0);
+        const token = await paypalAccessToken();
+
+        const orderRes = await fetch(`${PAYPAL_API}/v2/checkout/orders`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                intent: 'CAPTURE',
+                purchase_units: [
+                    {
+                        amount: {
+                            currency_code: 'USD',
+                            value: total.toFixed(2)
+                        },
+                        description: 'RTX marketplace order',
+                        custom_id: JSON.stringify(items.map((i) => ({ id: i.id, name: i.name })))
+                    }
+                ]
+            })
+        });
+
+        const order = await orderRes.json();
+        if (!orderRes.ok) {
+            console.error('PayPal create order', order);
+            return res.status(400).json({ error: order.message || 'PayPal order failed' });
+        }
+
+        res.json({ id: order.id });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message || 'PayPal error' });
+    }
+});
+
+app.post('/api/paypal/capture-order', async (req, res) => {
+    if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+        return res.status(503).json({ error: 'PayPal not configured' });
+    }
+
+    try {
+        const { orderID } = req.body;
+        if (!orderID) return res.status(400).json({ error: 'Missing orderID' });
+
+        const token = await paypalAccessToken();
+        const capRes = await fetch(`${PAYPAL_API}/v2/checkout/orders/${orderID}/capture`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
         });
-        
-        res.json({
-            clientSecret: paymentIntent.client_secret
+
+        const data = await capRes.json();
+        if (!capRes.ok || data.status !== 'COMPLETED') {
+            console.error('PayPal capture', data);
+            return res.status(400).json({ error: data.message || 'Capture failed', details: data });
+        }
+
+        res.json({ success: true, order: data });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message || 'Capture error' });
+    }
+});
+
+app.post('/api/create-payment-intent', async (req, res) => {
+    if (!stripe) return res.status(503).json({ error: 'Stripe not configured' });
+    try {
+        const { amount, items, userId } = req.body;
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: Math.round(amount * 100),
+            currency: 'usd',
+            metadata: {
+                userId: userId || '',
+                items: JSON.stringify(items || [])
+            }
         });
+        res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
-        console.error('Error creating payment intent:', error);
+        console.error(error);
         res.status(500).json({ error: 'Failed to create payment intent' });
     }
 });
 
-// Handle successful payment webhook
-app.post('/api/webhook', express.raw({type: 'application/json'}), async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    
-    let event;
-    
-    try {
-        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    } catch (err) {
-        console.error('Webhook signature verification failed:', err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-    
-    // Handle the event
-    if (event.type === 'payment_intent.succeeded') {
-        const paymentIntent = event.data.object;
-        
-        // Extract order details
-        const userId = paymentIntent.metadata.userId;
-        const items = JSON.parse(paymentIntent.metadata.items);
-        
-        // Process order - send files to customer
-        await processOrder(userId, items);
-        
-        console.log(`Payment succeeded for user ${userId}`);
-    }
-    
-    res.json({received: true});
-});
-
-// Join Discord server
 app.post('/api/discord/join', async (req, res) => {
     try {
         const { userId, accessToken } = req.body;
-        
-        // Add user to Discord server using bot
         const response = await fetch(
             `https://discord.com/api/guilds/${DISCORD_GUILD_ID}/members/${userId}`,
             {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,
+                    Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    access_token: accessToken
-                })
+                body: JSON.stringify({ access_token: accessToken })
             }
         );
-        
+
         if (response.ok) {
-            res.json({ success: true, message: 'Successfully joined Discord server' });
-        } else {
-            const error = await response.json();
-            console.error('Discord API error:', error);
-            res.status(400).json({ success: false, error: 'Failed to join server' });
+            return res.json({ success: true, message: 'Successfully joined Discord server' });
         }
+        const error = await response.json();
+        console.error('Discord API error', error);
+        res.status(400).json({ success: false, error: 'Failed to join server' });
     } catch (error) {
-        console.error('Error joining Discord server:', error);
+        console.error(error);
         res.status(500).json({ error: 'Failed to join Discord server' });
     }
 });
 
-// Process order and deliver files
-async function processOrder(userId, items) {
-    // TODO: Implement file delivery system
-    // This could involve:
-    // 1. Sending DM to user on Discord with download links
-    // 2. Storing order in database
-    // 3. Generating temporary download links
-    // 4. Sending email with files
-    
-    console.log(`Processing order for user ${userId}:`, items);
-    
+function formatItemLine(item) {
+    if (typeof item === 'string') return `• \`${item}\``;
+    if (item && item.name) return `• **${item.name}** — $${Number(item.price).toFixed(2)}`;
+    return JSON.stringify(item);
+}
+
+async function notifyPurchaseToDiscordWebhook(session, items) {
+    if (!DISCORD_PURCHASE_WEBHOOK_URL) return;
+
+    const total =
+        session.amount_total != null ? (session.amount_total / 100).toFixed(2) : '?';
+    const currency = (session.currency || 'usd').toUpperCase();
+    const email =
+        (session.customer_details && session.customer_details.email) ||
+        session.customer_email ||
+        '—';
+    const username = (session.metadata && session.metadata.username) || '—';
+    const discordUserId = (session.metadata && session.metadata.userId) || '';
+
+    let itemLines =
+        Array.isArray(items) && items.length
+            ? items.map(formatItemLine).join('\n')
+            : '_Line items not in metadata — check Stripe._';
+    if (itemLines.length > 1020) itemLines = itemLines.slice(0, 1017) + '…';
+
+    const embed = {
+        title: 'New RTX purchase',
+        description: `Stripe Checkout completed.`,
+        color: 0xff2d95,
+        fields: [
+            { name: 'Amount', value: `${currency} ${total}`, inline: true },
+            { name: 'Session', value: `\`${session.id}\``, inline: true },
+            { name: 'Buyer email', value: String(email).slice(0, 1024), inline: false },
+            {
+                name: 'Discord buyer',
+                value: String(
+                    username +
+                        (discordUserId ? ` (\`${discordUserId}\`)` : '') +
+                        (discordUserId ? '' : '\n_(not logged in on site)_')
+                ).slice(0, 1024),
+                inline: false
+            },
+            { name: 'Items', value: itemLines || '—', inline: false }
+        ],
+        timestamp: new Date().toISOString()
+    };
+
     try {
-        // Example: Send DM via Discord webhook or bot
+        const r = await fetch(DISCORD_PURCHASE_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                embeds: [embed],
+                username: 'RTX purchases'
+            })
+        });
+        if (!r.ok) {
+            const t = await r.text();
+            console.error('Discord webhook failed', r.status, t);
+        }
+    } catch (e) {
+        console.error('notifyPurchaseToDiscordWebhook', e);
+    }
+}
+
+async function processOrder(userId, items) {
+    if (!items || !items.length) return;
+    console.log(`Processing order for user ${userId}:`, items);
+
+    if (!DISCORD_BOT_TOKEN || !userId) return;
+
+    try {
         await sendDiscordDM(userId, items);
     } catch (error) {
-        console.error('Error processing order:', error);
+        console.error('processOrder', error);
     }
 }
 
-// Send Discord DM with purchase details
 async function sendDiscordDM(userId, items) {
-    // Create DM channel
-    const dmChannelResponse = await fetch(
-        'https://discord.com/api/users/@me/channels',
-        {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                recipient_id: userId
-            })
-        }
-    );
-    
+    const dmChannelResponse = await fetch('https://discord.com/api/users/@me/channels', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ recipient_id: userId })
+    });
+
     const dmChannel = await dmChannelResponse.json();
-    
     if (!dmChannel.id) {
-        console.error('Failed to create DM channel');
+        console.error('Failed to create DM channel', dmChannel);
         return;
     }
-    
-    // Send message with purchase details
+
     const message = {
-        content: `Thank you for your purchase from RTX!\n\nYou have purchased:\n${items.map(item => `- ${item.name} ($${item.price})`).join('\n')}\n\nYour download links will be provided shortly.`,
-        embeds: [{
-            title: '🎉 Purchase Successful',
-            description: 'Your FiveM resources are ready!',
-            color: 0xff2d95,
-            fields: items.map(item => ({
-                name: item.name,
-                value: `$${item.price}`,
-                inline: true
-            })),
-            footer: {
-                text: 'RTX — FiveM resources'
+        content: `Thank you for your purchase from RTX!\n\nYou purchased:\n${items.map((item) => `- ${item.name} ($${item.price})`).join('\n')}\n\nYour download links will follow.`,
+        embeds: [
+            {
+                title: 'Purchase successful',
+                description: 'Your FiveM resources',
+                color: 0xff2d95,
+                fields: items.map((item) => ({
+                    name: item.name,
+                    value: `$${item.price}`,
+                    inline: true
+                })),
+                footer: { text: 'RTX — FiveM resources' }
             }
-        }]
+        ]
     };
-    
-    await fetch(
-        `https://discord.com/api/channels/${dmChannel.id}/messages`,
-        {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(message)
-        }
-    );
+
+    await fetch(`https://discord.com/api/channels/${dmChannel.id}/messages`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(message)
+    });
 }
 
-// Start server
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`RTX backend running on port ${PORT}`);
+    console.log(`RTX API listening on port ${PORT}`);
 });
-
-/* 
-SETUP INSTRUCTIONS:
-
-1. Create .env file with:
-   STRIPE_SECRET_KEY=your_stripe_secret_key
-   STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
-   DISCORD_BOT_TOKEN=your_discord_bot_token
-   DISCORD_GUILD_ID=your_discord_server_id
-   FRONTEND_URL=https://yourusername.github.io/yourrepo
-   PORT=3000
-
-2. Install dependencies:
-   npm install express stripe cors dotenv node-fetch
-
-3. Run server:
-   node server.js
-
-4. Deploy to Heroku/DigitalOcean/AWS
-
-5. Update frontend config.js to point to your backend URL
-*/

@@ -1,186 +1,270 @@
-// Stripe checkout — RTX
+// RTX checkout — Stripe Checkout (optional PayPal if enabled in config)
 
-let stripe;
-let elements;
-let cardElement;
+let paypalButtonsRendered = false;
 
-// Initialize Stripe
-function initializeStripe() {
-    if (CONFIG.stripe.publishableKey && CONFIG.stripe.publishableKey !== 'YOUR_STRIPE_PUBLISHABLE_KEY') {
-        stripe = Stripe(CONFIG.stripe.publishableKey);
-        elements = stripe.elements({
-            appearance: {
-                theme: 'night',
-                variables: {
-                    colorPrimary: '#ff2d95',
-                    colorBackground: '#0a0a0a',
-                    colorText: '#ffffff',
-                    colorDanger: '#ff4444',
-                    fontFamily: 'Segoe UI, sans-serif',
-                    borderRadius: '4px'
-                }
-            }
-        });
-    }
+function getApiBase() {
+    const url = CONFIG.apiBaseUrl;
+    if (!url || url === 'YOUR_API_URL') return '';
+    return url.replace(/\/$/, '');
 }
 
-// Open checkout modal
-function openCheckout() {
-    const modal = document.getElementById('checkoutModal');
-    modal.classList.add('active');
-    
-    // Display checkout items
-    displayCheckoutItems();
-    
-    // Initialize Stripe elements if not already done
-    if (stripe && !cardElement) {
-        setupStripeElements();
-    }
-}
-
-// Close checkout modal
-function closeCheckout() {
-    const modal = document.getElementById('checkoutModal');
-    modal.classList.remove('active');
-}
-
-// Display checkout items
 function displayCheckoutItems() {
     const checkoutItems = document.getElementById('checkoutItems');
     const checkoutTotal = document.getElementById('checkoutTotal');
-    
     const total = getCartTotal();
-    
+
     checkoutItems.innerHTML = cart.map(item => `
         <div class="checkout-item">
-            <span>${item.name}</span>
+            <span>${escapeCheckoutHtml(item.name)}</span>
             <span>$${item.price.toFixed(2)}</span>
         </div>
     `).join('');
-    
+
     checkoutTotal.textContent = `$${total.toFixed(2)}`;
 }
 
-// Setup Stripe card element
-function setupStripeElements() {
-    const cardElementContainer = document.getElementById('card-element');
-    
-    cardElement = elements.create('card', {
-        style: {
-            base: {
-                color: '#ffffff',
-                fontSize: '16px',
-                '::placeholder': {
-                    color: '#999999'
-                }
-            },
-            invalid: {
-                color: '#ff4444'
-            }
-        }
-    });
-    
-    cardElement.mount('#card-element');
-    
-    // Handle real-time validation errors
-    cardElement.on('change', (event) => {
-        const displayError = document.getElementById('card-errors');
-        if (event.error) {
-            displayError.textContent = event.error.message;
-        } else {
-            displayError.textContent = '';
-        }
-    });
-    
-    // Setup payment button
-    const submitButton = document.getElementById('submit-payment');
-    submitButton.addEventListener('click', handlePayment);
+function escapeCheckoutHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
 }
 
-// Handle payment submission
-async function handlePayment(event) {
-    event.preventDefault();
-    
-    const submitButton = document.getElementById('submit-payment');
-    submitButton.disabled = true;
-    submitButton.textContent = 'Processing...';
-    
-    // Check if Stripe is configured
-    if (!stripe) {
-        showNotification('Payment system not configured. Please contact support.', 'error');
-        submitButton.disabled = false;
-        submitButton.textContent = 'Pay Now';
-        
-        // For demo purposes, simulate successful payment
-        simulatePayment();
+function openCheckout() {
+    const modal = document.getElementById('checkoutModal');
+    modal.classList.add('active');
+    displayCheckoutItems();
+    updatePaymentUI();
+    setupPayPalIfConfigured();
+}
+
+function closeCheckout() {
+    document.getElementById('checkoutModal').classList.remove('active');
+}
+
+function updatePaymentUI() {
+    const api = getApiBase();
+    const stripeConfigured = !!api;
+    const pp = CONFIG.paypal || {};
+    const paypalConfigured =
+        api &&
+        pp.enabled === true &&
+        pp.clientId &&
+        pp.clientId !== 'YOUR_PAYPAL_CLIENT_ID';
+
+    const stripeBtn = document.getElementById('stripe-checkout-btn');
+    const paypalSection = document.getElementById('paypal-section');
+    const paypalWrap = document.getElementById('paypal-button-container');
+    const hint = document.getElementById('payment-config-hint');
+
+    if (stripeBtn) {
+        stripeBtn.disabled = !stripeConfigured;
+        stripeBtn.style.opacity = stripeConfigured ? '1' : '0.5';
+    }
+    if (hint) {
+        hint.style.display = !api ? 'block' : 'none';
+    }
+    if (paypalSection) {
+        paypalSection.style.display = paypalConfigured ? 'block' : 'none';
+    }
+    if (paypalWrap && !paypalConfigured) {
+        paypalWrap.innerHTML = '';
+        paypalButtonsRendered = false;
+    }
+}
+
+async function startStripeCheckout() {
+    const api = getApiBase();
+    if (!api) {
+        showNotification('Set apiBaseUrl in config.js to your payment API URL.', 'error');
         return;
     }
-    
+
+    const user = getUser();
+    const btn = document.getElementById('stripe-checkout-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Redirecting…';
+    }
+
     try {
-        // In production, you would:
-        // 1. Create a PaymentIntent on your backend
-        // 2. Confirm the payment with Stripe
-        // 3. Process the order on your backend
-        
-        // Example backend call:
-        // const response = await fetch('YOUR_BACKEND_URL/api/create-payment-intent', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({
-        //         amount: Math.round(getCartTotal() * 100), // Amount in cents
-        //         items: cart
-        //     })
-        // });
-        // const { clientSecret } = await response.json();
-        
-        // const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        //     payment_method: {
-        //         card: cardElement
-        //     }
-        // });
-        
-        // For now, simulate successful payment
-        simulatePayment();
-        
-    } catch (error) {
-        console.error('Payment error:', error);
-        showNotification('Payment failed. Please try again.', 'error');
-        submitButton.disabled = false;
-        submitButton.textContent = 'Pay Now';
+        const res = await fetch(`${api}/api/create-checkout-session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                items: cart.map(i => ({
+                    id: i.id,
+                    name: i.name,
+                    price: i.price
+                })),
+                userId: user ? user.id : '',
+                username: user ? user.username : ''
+            })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data.error || res.statusText || 'Checkout failed');
+        }
+        if (data.url) {
+            window.location.href = data.url;
+            return;
+        }
+        throw new Error('No checkout URL returned');
+    } catch (e) {
+        console.error(e);
+        showNotification(e.message || 'Could not start Stripe checkout', 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Pay with card & more (Stripe)';
+        }
     }
 }
 
-// Simulate payment for demo purposes
-function simulatePayment() {
-    const user = getUser();
-    
-    // Create order object
-    const order = {
-        orderId: generateOrderId(),
-        userId: user.id,
-        username: user.username,
-        items: cart,
-        total: getCartTotal(),
-        date: new Date().toISOString(),
-        status: 'completed'
-    };
-    
-    // Save order to localStorage (in production, save to database)
-    saveOrder(order);
-    
-    // Show success message
-    setTimeout(() => {
-        closeCheckout();
-        clearCart();
-        showPaymentSuccess(order);
-        
-        const submitButton = document.getElementById('submit-payment');
-        submitButton.disabled = false;
-        submitButton.textContent = 'Pay Now';
-    }, 1500);
+function loadPayPalScript() {
+    const pp = CONFIG.paypal || {};
+    const clientId = pp.clientId;
+    if (!pp.enabled || !clientId || clientId === 'YOUR_PAYPAL_CLIENT_ID') {
+        return Promise.reject(new Error('no client id'));
+    }
+
+    if (window.paypal) return Promise.resolve();
+
+    return new Promise((resolve, reject) => {
+        if (document.querySelector('script[data-rtx-paypal]')) {
+            const t = setInterval(() => {
+                if (window.paypal) {
+                    clearInterval(t);
+                    resolve();
+                }
+            }, 50);
+            setTimeout(() => {
+                clearInterval(t);
+                if (window.paypal) resolve();
+                else reject(new Error('PayPal SDK timeout'));
+            }, 10000);
+            return;
+        }
+        const s = document.createElement('script');
+        s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD`;
+        s.async = true;
+        s.setAttribute('data-rtx-paypal', '1');
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('PayPal SDK failed to load'));
+        document.body.appendChild(s);
+    });
 }
 
-// Show payment success message
+function setupPayPalIfConfigured() {
+    const api = getApiBase();
+    const pp = CONFIG.paypal || {};
+    if (!pp.enabled) return;
+    const clientId = pp.clientId;
+    if (!api || !clientId || clientId === 'YOUR_PAYPAL_CLIENT_ID') return;
+    if (paypalButtonsRendered) return;
+
+    const container = document.getElementById('paypal-button-container');
+    if (!container) return;
+
+    loadPayPalScript()
+        .then(() => {
+            if (!window.paypal || paypalButtonsRendered) return;
+            paypalButtonsRendered = true;
+            container.innerHTML = '';
+
+            window.paypal.Buttons({
+                style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
+                createOrder: async () => {
+                    const res = await fetch(`${api}/api/paypal/create-order`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            items: cart.map(i => ({
+                                id: i.id,
+                                name: i.name,
+                                price: i.price
+                            }))
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'PayPal order failed');
+                    return data.id;
+                },
+                onApprove: async (data) => {
+                    const res = await fetch(`${api}/api/paypal/capture-order`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderID: data.orderID })
+                    });
+                    const result = await res.json();
+                    if (!res.ok || !result.success) {
+                        showNotification(result.error || 'PayPal capture failed', 'error');
+                        return;
+                    }
+                    const user = getUser();
+                    const order = {
+                        orderId: generateOrderId(),
+                        userId: user ? user.id : '',
+                        username: user ? user.username : '',
+                        items: cart,
+                        total: getCartTotal(),
+                        date: new Date().toISOString(),
+                        status: 'completed',
+                        provider: 'paypal'
+                    };
+                    saveOrder(order);
+                    closeCheckout();
+                    clearCart();
+                    showPaymentSuccess(order);
+                },
+                onError: (err) => {
+                    console.error(err);
+                    showNotification('PayPal error', 'error');
+                }
+            }).render(container);
+        })
+        .catch((e) => {
+            console.warn('PayPal:', e.message);
+        });
+}
+
+function handleCheckoutReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get('checkout');
+    const sessionId = params.get('session_id');
+
+    if (checkout === 'success' && sessionId) {
+        const seen = sessionStorage.getItem('rtx_stripe_ok_' + sessionId);
+        if (seen) {
+            window.history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
+            return;
+        }
+        sessionStorage.setItem('rtx_stripe_ok_' + sessionId, '1');
+
+        const user = getUser();
+        const order = {
+            orderId: 'RTX-' + sessionId.slice(-12).toUpperCase(),
+            userId: user ? user.id : '',
+            username: user ? user.username : '',
+            items: [...cart],
+            total: getCartTotal(),
+            date: new Date().toISOString(),
+            status: 'completed',
+            provider: 'stripe',
+            stripeSessionId: sessionId
+        };
+        saveOrder(order);
+        clearCart();
+        showPaymentSuccess(order);
+        window.history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
+        return;
+    }
+
+    if (checkout === 'cancel') {
+        showNotification('Stripe checkout was cancelled.', 'error');
+        window.history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
+    }
+}
+
 function showPaymentSuccess(order) {
     const successMessage = `
         <div style="
@@ -196,14 +280,14 @@ function showPaymentSuccess(order) {
             z-index: 10000;
             text-align: center;
         ">
-            <h2 style="color: #ff2d95; margin-bottom: 1rem;">Payment Successful!</h2>
-            <p style="color: #fff; margin-bottom: 1rem;">Order #${order.orderId}</p>
+            <h2 style="color: #ff2d95; margin-bottom: 1rem;">Payment successful</h2>
+            <p style="color: #fff; margin-bottom: 1rem;">Order #${escapeCheckoutHtml(order.orderId)}</p>
             <p style="color: #ccc; margin-bottom: 1.5rem;">
-                Thank you for your purchase! Your FiveM resources will be delivered to your Discord DM shortly.
+                Thank you for your purchase. Deliver your FiveM files via Discord or email (configure your backend webhook).
             </p>
-            <button onclick="this.parentElement.remove()" style="
+            <button type="button" onclick="this.closest('[data-rtx-overlay]').remove()" style="
                 background-color: #ff2d95;
-                color: white;
+                color: #0a0a0a;
                 border: none;
                 padding: 0.7rem 2rem;
                 border-radius: 4px;
@@ -212,8 +296,9 @@ function showPaymentSuccess(order) {
             ">Close</button>
         </div>
     `;
-    
+
     const overlay = document.createElement('div');
+    overlay.setAttribute('data-rtx-overlay', '1');
     overlay.style.cssText = `
         position: fixed;
         top: 0;
@@ -224,14 +309,13 @@ function showPaymentSuccess(order) {
         z-index: 9999;
     `;
     overlay.innerHTML = successMessage;
-    overlay.onclick = (e) => {
+    overlay.addEventListener('click', (e) => {
         if (e.target === overlay) overlay.remove();
-    };
-    
+    });
+
     document.body.appendChild(overlay);
 }
 
-// Generate random order ID
 function generateOrderId() {
     return 'RTX-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
 }
@@ -252,15 +336,19 @@ function getOrders() {
     return ordersStr ? JSON.parse(ordersStr) : [];
 }
 
-// Close modal when clicking outside
 document.addEventListener('click', (e) => {
     const modal = document.getElementById('checkoutModal');
-    if (e.target === modal) {
-        closeCheckout();
-    }
+    if (e.target === modal) closeCheckout();
 });
 
-// Initialize Stripe on page load
 document.addEventListener('DOMContentLoaded', () => {
-    initializeStripe();
+    handleCheckoutReturn();
+
+    const stripeBtn = document.getElementById('stripe-checkout-btn');
+    if (stripeBtn) {
+        stripeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            startStripeCheckout();
+        });
+    }
 });

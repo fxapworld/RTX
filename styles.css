@@ -609,6 +609,52 @@ main {
     cursor: not-allowed;
 }
 
+.pay-btn-stripe {
+    margin-bottom: 1rem;
+}
+
+.payment-methods-intro {
+    font-size: 0.88rem;
+    color: #bbb;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.payment-methods-intro a {
+    color: var(--accent-pink-soft);
+}
+
+.payment-config-hint {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 0.75rem 0 1rem;
+    padding: 0.75rem;
+    background: var(--primary-black);
+    border-radius: 6px;
+    border: 1px dashed var(--border-gray);
+}
+
+.payment-config-hint code {
+    color: var(--accent-pink-soft);
+    font-size: 0.85em;
+}
+
+.paypal-wrap {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-gray);
+}
+
+.paypal-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+}
+
+#paypal-button-container {
+    min-height: 45px;
+}
+
 /* Footer */
 footer {
     background-color: var(--secondary-black);

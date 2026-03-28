@@ -134,10 +134,14 @@
                     </div>
                 </div>
                 <div class="payment-section">
-                    <h3>Payment Information</h3>
-                    <div id="card-element"></div>
-                    <div id="card-errors" role="alert"></div>
-                    <button type="button" id="submit-payment" class="pay-btn">Pay Now</button>
+                    <h3>Pay securely</h3>
+                    <p class="payment-methods-intro">Cards, debit, Apple Pay, Google Pay, Link, and more on Stripe’s secure page. Enable <strong>Cash App Pay</strong> in your <a href="https://dashboard.stripe.com/settings/payment_methods" target="_blank" rel="noopener">Stripe Dashboard</a> (US) if you want it.</p>
+                    <button type="button" id="stripe-checkout-btn" class="pay-btn pay-btn-stripe">Pay with card &amp; more (Stripe)</button>
+                    <p id="payment-config-hint" class="payment-config-hint">Configure <code>apiBaseUrl</code> in <code>config.js</code> and deploy the API (see <code>server.js</code>). Stripe secrets stay on the server only.</p>
+                    <div id="paypal-section" class="paypal-wrap" style="display:none;">
+                        <p class="paypal-label">Or pay with PayPal</p>
+                        <div id="paypal-button-container"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -169,7 +173,6 @@
         </div>
     </footer>
 
-    <script src="https://js.stripe.com/v3/"></script>
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="cart.js"></script>

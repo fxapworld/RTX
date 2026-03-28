@@ -1,16 +1,29 @@
 // Configuration for RTX — FiveM marketplace (GitHub Pages + optional backend)
 
 const CONFIG = {
+    // Deploy server.js (Render, Railway, Fly.io, VPS) and paste its public URL here — required for real payments.
+    // Stripe Dashboard → Webhooks → Endpoint = https://YOUR-API-HOST/api/webhook (not Discord).
+    // Discord purchase alerts: set DISCORD_PURCHASE_WEBHOOK_URL only in server .env (not in config.js).
+    apiBaseUrl: 'YOUR_API_URL',
+
     discord: {
         clientId: 'YOUR_DISCORD_CLIENT_ID',
-        redirectUri: 'https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/',
+        redirectUri: 'https://fxapworld.github.io/RTX/',
         scope: 'identify guilds.join',
         guildId: 'YOUR_DISCORD_SERVER_ID',
         botToken: 'YOUR_DISCORD_BOT_TOKEN'
     },
 
+    // Publishable key is safe in the browser (optional — only if you add Stripe.js features later).
     stripe: {
         publishableKey: 'YOUR_STRIPE_PUBLISHABLE_KEY'
+    },
+
+    // PayPal — leave disabled if you only use Stripe.
+    paypal: {
+        enabled: false,
+        clientId: '',
+        sandbox: false
     },
 
     store: {

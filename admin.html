@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTX — Catalog (seller)</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .admin-wrap { max-width: 900px; margin: 2rem auto; padding: 0 20px 4rem; }
+        .admin-wrap h1 { margin-bottom: 0.5rem; }
+        .admin-wrap .sub { color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }
+        .admin-wrap .sub a { color: var(--accent-pink-soft); }
+        .admin-grid { display: grid; gap: 1rem; margin-bottom: 1rem; }
+        .admin-grid label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.25rem; }
+        .admin-grid input, .admin-grid textarea, .admin-grid select {
+            width: 100%; padding: 0.65rem 0.75rem; border-radius: 6px;
+            border: 1px solid var(--border-gray); background: var(--primary-black); color: var(--pure-white);
+            font: inherit;
+        }
+        .admin-grid textarea { min-height: 80px; resize: vertical; }
+        .admin-row.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 600px) { .admin-row.two { grid-template-columns: 1fr; } }
+        .admin-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1.5rem 0; }
+        .admin-actions button { padding: 0.65rem 1.2rem; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; }
+        .btn-primary { background: var(--accent-pink); color: var(--primary-black); }
+        .btn-primary:hover { background: var(--accent-pink-soft); }
+        .btn-ghost { background: transparent; border: 1px solid var(--accent-pink) !important; color: var(--accent-pink-soft); }
+        .admin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 2rem; }
+        .admin-table th, .admin-table td { border: 1px solid var(--border-gray); padding: 0.5rem 0.6rem; text-align: left; }
+        .admin-table th { background: var(--surface); color: var(--accent-pink-soft); }
+        .admin-table tr:nth-child(even) { background: rgba(255,45,149,0.04); }
+        .admin-table button { font-size: 0.8rem; padding: 0.35rem 0.6rem; margin-right: 0.35rem; cursor: pointer; border-radius: 4px; border: 1px solid var(--border-gray); background: var(--secondary-black); color: var(--pure-white); }
+        .admin-table button:hover { border-color: var(--accent-pink); color: var(--accent-pink-soft); }
+        .locked { opacity: 0.5; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div>
+                        <div class="logo-mark">RTX</div>
+                        <div class="logo-tag">Seller catalog</div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <a href="index.html" class="btn-outline" style="text-decoration:none;display:inline-flex;align-items:center;">← Store</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="main-nav">
+        <div class="container">
+            <ul class="nav-list">
+                <li><a href="index.html">View storefront</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="admin-wrap" id="adminRoot">
+        <h1>Manage packages</h1>
+        <p class="sub">
+            GitHub Pages only serves static files — there is no server upload. Build your catalog here, then
+            <strong>Download products.json</strong> and commit it to your repo (or host ZIPs on <a href="https://github.com/releases" target="_blank" rel="noopener">GitHub Releases</a> / your CDN and paste the download URL).
+        </p>
+
+        <div id="lockGate" class="admin-grid">
+            <label>Access key (set in <code>config.js</code> → <code>admin.accessKey</code>)</label>
+            <input type="password" id="accessKey" placeholder="Enter key" autocomplete="off">
+            <button type="button" class="btn-primary" style="max-width:200px;margin-top:0.5rem" id="unlockBtn">Unlock</button>
+        </div>
+
+        <div id="editor" class="locked" style="display:none;">
+            <form id="productForm" class="admin-grid">
+                <div class="admin-row two">
+                    <div>
+                        <label>ID (unique, no spaces)</label>
+                        <input name="id" required placeholder="e.g. script-job-xyz">
+                    </div>
+                    <div>
+                        <label>Price (USD)</label>
+                        <input name="price" type="number" step="0.01" min="0" required placeholder="29.99">
+                    </div>
+                </div>
+                <div>
+                    <label>Name</label>
+                    <input name="name" required placeholder="Package name">
+                </div>
+                <div class="admin-row two">
+                    <div>
+                        <label>Category</label>
+                        <select name="category">
+                            <option value="maps">maps</option>
+                            <option value="scripts">scripts</option>
+                            <option value="weapons">weapons</option>
+                            <option value="clothing">clothing</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Subcategory</label>
+                        <input name="subcategory" required placeholder="houses, jobs, pistols…">
+                    </div>
+                </div>
+                <div>
+                    <label>Short description (card)</label>
+                    <textarea name="description" required placeholder="One or two lines"></textarea>
+                </div>
+                <div>
+                    <label>Long description (detail page)</label>
+                    <textarea name="longDescription" placeholder="Full details, install, framework notes…"></textarea>
+                </div>
+                <div>
+                    <label>Image URL (preview)</label>
+                    <input name="image" type="url" required placeholder="https://…">
+                </div>
+                <div class="admin-row two">
+                    <div>
+                        <label>Video URL (YouTube or Vimeo — optional)</label>
+                        <input name="video" type="url" placeholder="https://youtube.com/watch?v=…">
+                    </div>
+                    <div>
+                        <label>Download URL (after purchase — optional)</label>
+                        <input name="downloadUrl" type="url" placeholder="GitHub Release / CDN link">
+                    </div>
+                </div>
+                <div>
+                    <label>Tags (comma-separated)</label>
+                    <input name="tags" placeholder="qbcore, esx, mlo">
+                </div>
+                <div class="admin-actions">
+                    <button type="submit" class="btn-primary" id="saveBtn">Save package</button>
+                    <button type="button" class="btn-ghost" id="resetForm">Clear form</button>
+                </div>
+            </form>
+
+            <div class="admin-actions">
+                <button type="button" class="btn-primary" id="exportBtn">Download products.json</button>
+                <label class="btn-ghost" style="display:inline-flex;align-items:center;padding:0.65rem 1.2rem;cursor:pointer;">
+                    Import JSON
+                    <input type="file" id="importFile" accept=".json,application/json" style="display:none">
+                </label>
+                <button type="button" class="btn-ghost" id="reloadBtn">Reload from site</button>
+            </div>
+
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="productRows"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 RTX</p>
+        </div>
+    </footer>
+
+    <script src="config.js"></script>
+    <script>
+        let products = [];
+        let editingId = null;
+
+        const editor = document.getElementById('editor');
+        const lockGate = document.getElementById('lockGate');
+        const form = document.getElementById('productForm');
+        const idInput = () => form.querySelector('[name="id"]');
+
+        function parseTags(str) {
+            if (!str || !str.trim()) return [];
+            return str.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+        }
+
+        function formToProduct(data) {
+            const p = {
+                id: data.id.trim(),
+                name: data.name.trim(),
+                category: data.category,
+                subcategory: data.subcategory.trim(),
+                price: parseFloat(data.price),
+                description: data.description.trim(),
+                image: data.image.trim(),
+                tags: parseTags(data.tags)
+            };
+            if (data.longDescription && data.longDescription.trim()) p.longDescription = data.longDescription.trim();
+            if (data.video && data.video.trim()) p.video = data.video.trim();
+            if (data.downloadUrl && data.downloadUrl.trim()) p.downloadUrl = data.downloadUrl.trim();
+            return p;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('productRows');
+            tbody.innerHTML = products.map(p => `
+                <tr>
+                    <td>${escapeHtml(p.id)}</td>
+                    <td>${escapeHtml(p.name)}</td>
+                    <td>$${Number(p.price).toFixed(2)}</td>
+                    <td>
+                        <button type="button" data-edit="${escapeHtml(p.id)}">Edit</button>
+                        <button type="button" data-del="${escapeHtml(p.id)}">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            tbody.querySelectorAll('[data-edit]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-edit');
+                    const p = products.find(x => x.id === id);
+                    if (!p) return;
+                    editingId = id;
+                    idInput().value = p.id;
+                    idInput().disabled = true;
+                    form.name.value = p.name;
+                    form.category.value = p.category;
+                    form.subcategory.value = p.subcategory;
+                    form.price.value = p.price;
+                    form.description.value = p.description;
+                    form.longDescription.value = p.longDescription || '';
+                    form.image.value = p.image;
+                    form.video.value = p.video || '';
+                    form.downloadUrl.value = p.downloadUrl || '';
+                    form.tags.value = (p.tags || []).join(', ');
+                    document.getElementById('saveBtn').textContent = 'Update package';
+                });
+            });
+
+            tbody.querySelectorAll('[data-del]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-del');
+                    if (!confirm('Delete ' + id + '?')) return;
+                    products = products.filter(x => x.id !== id);
+                    renderTable();
+                });
+            });
+        }
+
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        async function loadRemote() {
+            const res = await fetch('products.json?' + Date.now());
+            const data = await res.json();
+            products = data.products || [];
+            renderTable();
+        }
+
+        document.getElementById('unlockBtn').addEventListener('click', () => {
+            const key = document.getElementById('accessKey').value;
+            const expected = CONFIG.admin && CONFIG.admin.accessKey;
+            if (!expected || key !== expected) {
+                alert('Invalid key. Update config.js → admin.accessKey');
+                return;
+            }
+            lockGate.style.display = 'none';
+            editor.style.display = 'block';
+            editor.classList.remove('locked');
+            loadRemote().catch(() => alert('Could not load products.json — open this page from a local server or after deploy.'));
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const fd = new FormData(form);
+            const data = Object.fromEntries(fd.entries());
+            if (editingId) data.id = editingId;
+            try {
+                const p = formToProduct(data);
+                if (editingId) {
+                    const idx = products.findIndex(x => x.id === editingId);
+                    if (idx >= 0) products[idx] = p;
+                    idInput().disabled = false;
+                    editingId = null;
+                    document.getElementById('saveBtn').textContent = 'Save package';
+                } else {
+                    if (products.some(x => x.id === p.id)) {
+                        alert('ID already exists. Edit the row or choose another ID.');
+                        return;
+                    }
+                    products.push(p);
+                }
+                form.reset();
+                renderTable();
+            } catch (err) {
+                alert(err.message || 'Invalid data');
+            }
+        });
+
+        document.getElementById('resetForm').addEventListener('click', () => {
+            form.reset();
+            idInput().disabled = false;
+            editingId = null;
+            document.getElementById('saveBtn').textContent = 'Save package';
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const json = JSON.stringify({ products }, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'products.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        });
+
+        document.getElementById('importFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const data = JSON.parse(reader.result);
+                    products = data.products || [];
+                    renderTable();
+                } catch {
+                    alert('Invalid JSON');
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        });
+
+        document.getElementById('reloadBtn').addEventListener('click', () => {
+            loadRemote().catch(() => alert('Reload failed.'));
+        });
+    </script>
+</body>
+</html>

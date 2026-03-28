@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTX — FiveM Resources</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%23050508' width='32' height='32' rx='6'/%3E%3Ctext x='16' y='22' text-anchor='middle' fill='%23ff2d95' font-family='system-ui' font-weight='800' font-size='14'%3ERTX%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div>
+                        <div class="logo-mark">RTX</div>
+                        <div class="logo-tag">FiveM marketplace</div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search products...">
+                        <button type="button" onclick="searchProducts()" aria-label="Search">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="cart-btn" type="button" onclick="toggleCart()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M9 2L7.17 5M9 2L10.83 5M9 2v3m6-3l1.83 3M15 2l-1.83 3M15 2v3m-6 0h6m-6 0H7.17M15 5h1.83M7.17 5L5 9h14l-2.17-4M5 9v10a2 2 0 002 2h10a2 2 0 002-2V9M5 9h14"/>
+                        </svg>
+                        <span class="cart-count" id="cartCount">0</span>
+                    </button>
+                    <button class="user-btn" type="button" id="userBtn" onclick="handleAuth()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/>
+                        </svg>
+                        <span id="userText">Login</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="main-nav">
+        <div class="container">
+            <ul class="nav-list">
+                <li><a href="#" onclick="showAllProducts(); return false;">All Products</a></li>
+                <li class="dropdown">
+                    <a href="#" onclick="return false;">Maps</a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#" onclick="filterByCategory('maps', 'houses'); return false;">Houses</a></li>
+                        <li><a href="#" onclick="filterByCategory('maps', 'stores'); return false;">Stores</a></li>
+                        <li><a href="#" onclick="filterByCategory('maps', 'offices'); return false;">Offices</a></li>
+                        <li><a href="#" onclick="filterByCategory('maps', 'warehouses'); return false;">Warehouses</a></li>
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <a href="#" onclick="return false;">Scripts</a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#" onclick="filterByCategory('scripts', 'jobs'); return false;">Jobs</a></li>
+                        <li><a href="#" onclick="filterByCategory('scripts', 'housing'); return false;">Housing</a></li>
+                        <li><a href="#" onclick="filterByCategory('scripts', 'vehicles'); return false;">Vehicles</a></li>
+                        <li><a href="#" onclick="filterByCategory('scripts', 'utilities'); return false;">Utilities</a></li>
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <a href="#" onclick="return false;">Weapons</a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#" onclick="filterByCategory('weapons', 'pistols'); return false;">Pistols</a></li>
+                        <li><a href="#" onclick="filterByCategory('weapons', 'rifles'); return false;">Rifles</a></li>
+                        <li><a href="#" onclick="filterByCategory('weapons', 'melee'); return false;">Melee</a></li>
+                        <li><a href="#" onclick="filterByCategory('weapons', 'packs'); return false;">Weapon Packs</a></li>
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <a href="#" onclick="return false;">Clothing</a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#" onclick="filterByCategory('clothing', 'tops'); return false;">Tops</a></li>
+                        <li><a href="#" onclick="filterByCategory('clothing', 'bottoms'); return false;">Bottoms</a></li>
+                        <li><a href="#" onclick="filterByCategory('clothing', 'shoes'); return false;">Shoes</a></li>
+                        <li><a href="#" onclick="filterByCategory('clothing', 'accessories'); return false;">Accessories</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div id="categoryTitle" class="category-title">All Products</div>
+
+        <div id="productsGrid" class="products-grid"></div>
+
+        <div id="noResults" class="no-results" style="display: none;">
+            <h3>No products found</h3>
+            <p>Try adjusting your search or browse our categories</p>
+        </div>
+    </main>
+
+    <div id="productModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+        <div class="modal-content product-detail-modal">
+            <span class="close" onclick="closeProductModal()" aria-label="Close">&times;</span>
+            <div id="productModalBody"></div>
+        </div>
+    </div>
+
+    <div id="cartSidebar" class="cart-sidebar">
+        <div class="cart-header">
+            <h2>Shopping Cart</h2>
+            <button type="button" onclick="toggleCart()" class="close-btn">&times;</button>
+        </div>
+        <div id="cartItems" class="cart-items"></div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="cartTotal">$0.00</span>
+            </div>
+            <button type="button" class="checkout-btn" onclick="proceedToCheckout()">Checkout</button>
+        </div>
+    </div>
+
+    <div id="checkoutModal" class="modal">
+        <div class="modal-content checkout-modal">
+            <span class="close" onclick="closeCheckout()">&times;</span>
+            <h2>Checkout</h2>
+            <div id="checkoutContent">
+                <div class="checkout-summary">
+                    <h3>Order Summary</h3>
+                    <div id="checkoutItems"></div>
+                    <div class="checkout-total">
+                        <strong>Total:</strong>
+                        <strong id="checkoutTotal">$0.00</strong>
+                    </div>
+                </div>
+                <div class="payment-section">
+                    <h3>Payment Information</h3>
+                    <div id="card-element"></div>
+                    <div id="card-errors" role="alert"></div>
+                    <button type="button" id="submit-payment" class="pay-btn">Pay Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="authModal" class="modal">
+        <div class="modal-content auth-modal">
+            <span class="close" onclick="closeAuthModal()">&times;</span>
+            <h2>Login Required</h2>
+            <p>Sign in with Discord to checkout on RTX.</p>
+            <button type="button" class="discord-btn" onclick="loginWithDiscord()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515a.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0a12.64 12.64 0 00-.617-1.25a.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057a19.9 19.9 0 005.993 3.03a.078.078 0 00.084-.028a14.09 14.09 0 001.226-1.994a.076.076 0 00-.041-.106a13.107 13.107 0 01-1.872-.892a.077.077 0 01-.008-.128a10.2 10.2 0 00.372-.292a.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127a12.299 12.299 0 01-1.873.892a.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028a19.839 19.839 0 006.002-3.03a.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                </svg>
+                Login with Discord
+            </button>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 RTX — FiveM resources marketplace</p>
+            <div class="footer-links">
+                <a href="admin.html">Seller tools</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Support</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="cart.js"></script>
+    <script src="checkout.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

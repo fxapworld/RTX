@@ -33,7 +33,7 @@ const CONFIG = {
 
     // Simple gate for admin.html (not secret in repo — use private repo or omit admin link)
     admin: {
-        accessKey: 'change-me'
+        accessKey: 'ocho246'
     }
 };
 

@@ -65,6 +65,10 @@
             GitHub Pages only serves static files — there is no server upload. Build your catalog here, then
             <strong>Download products.json</strong> and commit it to your repo (or host ZIPs on <a href="https://github.com/releases" target="_blank" rel="noopener">GitHub Releases</a> / your CDN and paste the download URL).
         </p>
+        <p class="sub" style="border-left:3px solid var(--accent-pink);padding-left:1rem;">
+            <strong>Sign in:</strong> use the key from <code>config.js</code> → <code>admin.accessKey</code> (default is <code>change-me</code> — change it, commit, and use your new key).
+            <strong>“Upload” files:</strong> upload your ZIP somewhere public (e.g. <a href="https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases" target="_blank" rel="noopener">GitHub Release asset</a>), then paste that link into <strong>Download URL</strong> for the package.
+        </p>
 
         <div id="lockGate" class="admin-grid">
             <label>Access key (set in <code>config.js</code> → <code>admin.accessKey</code>)</label>

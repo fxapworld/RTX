@@ -177,6 +177,7 @@
         const lockGate = document.getElementById('lockGate');
         const form = document.getElementById('productForm');
         const idInput = () => form.querySelector('[name="id"]');
+        const field = (name) => form.querySelector(`[name="${name}"]`);
 
         function parseTags(str) {
             if (!str || !str.trim()) return [];
@@ -202,45 +203,47 @@
 
         function renderTable() {
             const tbody = document.getElementById('productRows');
-            tbody.innerHTML = products.map(p => `
+            tbody.innerHTML = products.map((p, i) => `
                 <tr>
                     <td>${escapeHtml(p.id)}</td>
                     <td>${escapeHtml(p.name)}</td>
                     <td>$${Number(p.price).toFixed(2)}</td>
                     <td>
-                        <button type="button" data-edit="${escapeHtml(p.id)}">Edit</button>
-                        <button type="button" data-del="${escapeHtml(p.id)}">Delete</button>
+                        <button type="button" data-edit-idx="${i}">Edit</button>
+                        <button type="button" data-del-idx="${i}">Delete</button>
                     </td>
                 </tr>
             `).join('');
 
-            tbody.querySelectorAll('[data-edit]').forEach(btn => {
+            tbody.querySelectorAll('[data-edit-idx]').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const id = btn.getAttribute('data-edit');
-                    const p = products.find(x => x.id === id);
+                    const idx = Number(btn.getAttribute('data-edit-idx'));
+                    const p = products[idx];
                     if (!p) return;
-                    editingId = id;
+                    editingId = p.id;
                     idInput().value = p.id;
                     idInput().disabled = true;
-                    form.name.value = p.name;
-                    form.category.value = p.category;
-                    form.subcategory.value = p.subcategory;
-                    form.price.value = p.price;
-                    form.description.value = p.description;
-                    form.longDescription.value = p.longDescription || '';
-                    form.image.value = p.image;
-                    form.video.value = p.video || '';
-                    form.downloadUrl.value = p.downloadUrl || '';
-                    form.tags.value = (p.tags || []).join(', ');
+                    field('name').value = p.name;
+                    field('category').value = p.category;
+                    field('subcategory').value = p.subcategory;
+                    field('price').value = p.price;
+                    field('description').value = p.description;
+                    field('longDescription').value = p.longDescription || '';
+                    field('image').value = p.image;
+                    field('video').value = p.video || '';
+                    field('downloadUrl').value = p.downloadUrl || '';
+                    field('tags').value = (p.tags || []).join(', ');
                     document.getElementById('saveBtn').textContent = 'Update package';
                 });
             });
 
-            tbody.querySelectorAll('[data-del]').forEach(btn => {
+            tbody.querySelectorAll('[data-del-idx]').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const id = btn.getAttribute('data-del');
-                    if (!confirm('Delete ' + id + '?')) return;
-                    products = products.filter(x => x.id !== id);
+                    const idx = Number(btn.getAttribute('data-del-idx'));
+                    const p = products[idx];
+                    if (!p) return;
+                    if (!confirm('Delete ' + p.id + '?')) return;
+                    products.splice(idx, 1);
                     renderTable();
                 });
             });

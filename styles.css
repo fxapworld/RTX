@@ -233,6 +233,9 @@ main {
 .products-slider {
     position: relative;
     overflow: hidden;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    padding: 0 1rem;
     margin-bottom: 2rem;
     mask-image: linear-gradient(to right, transparent 0, black 4%, black 96%, transparent 100%);
 }
@@ -244,6 +247,7 @@ main {
     animation: slider-left 75s linear infinite;
 }
 
+.products-slider:hover .products-track,
 .products-track:hover {
     animation-play-state: paused;
 }
@@ -710,7 +714,7 @@ footer p {
 
 @keyframes slider-left {
     from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
+    to { transform: translateX(var(--slide-distance, -50%)); }
 }
 
 /* Responsive */

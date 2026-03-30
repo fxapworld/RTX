@@ -10,7 +10,12 @@
       "longDescription": "Full MLO with optimized props, LODs, and collision. Includes pool area, 6-car garage, and rooftop access. Works with QB-Core and ESX door systems. Installation: drop into resources, ensure in server.cfg.",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Luxury+Mansion",
       "downloadUrl": "https://example.com/your-release-zip-after-purchase",
-      "tags": ["mlo", "house", "luxury", "modern"]
+      "tags": [
+        "mlo",
+        "house",
+        "luxury",
+        "modern"
+      ]
     },
     {
       "id": "map-house-002",
@@ -20,7 +25,12 @@
       "price": 24.99,
       "description": "5 unique beach villas with ocean views and custom props",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Beach+Villa",
-      "tags": ["mlo", "house", "beach", "villa"]
+      "tags": [
+        "mlo",
+        "house",
+        "beach",
+        "villa"
+      ]
     },
     {
       "id": "map-house-003",
@@ -30,7 +40,12 @@
       "price": 19.99,
       "description": "3 customizable gang hideouts with secret rooms",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Gang+Hideout",
-      "tags": ["mlo", "gang", "hideout", "roleplay"]
+      "tags": [
+        "mlo",
+        "gang",
+        "hideout",
+        "roleplay"
+      ]
     },
     {
       "id": "map-store-001",
@@ -40,7 +55,12 @@
       "price": 34.99,
       "description": "Fully detailed gun store with display cases and backroom",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Gun+Store",
-      "tags": ["mlo", "store", "weapons", "business"]
+      "tags": [
+        "mlo",
+        "store",
+        "weapons",
+        "business"
+      ]
     },
     {
       "id": "map-store-002",
@@ -50,7 +70,12 @@
       "price": 27.99,
       "description": "Modern clothing boutique with changing rooms",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Clothing+Store",
-      "tags": ["mlo", "store", "clothing", "shop"]
+      "tags": [
+        "mlo",
+        "store",
+        "clothing",
+        "shop"
+      ]
     },
     {
       "id": "map-store-003",
@@ -60,7 +85,12 @@
       "price": 22.99,
       "description": "4 unique 24/7 store interiors with custom shelving",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=24-7+Store",
-      "tags": ["mlo", "store", "convenience", "shop"]
+      "tags": [
+        "mlo",
+        "store",
+        "convenience",
+        "shop"
+      ]
     },
     {
       "id": "map-office-001",
@@ -70,7 +100,12 @@
       "price": 32.99,
       "description": "High-rise office with meeting rooms and executive suite",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Executive+Office",
-      "tags": ["mlo", "office", "business", "luxury"]
+      "tags": [
+        "mlo",
+        "office",
+        "business",
+        "luxury"
+      ]
     },
     {
       "id": "map-office-002",
@@ -80,7 +115,12 @@
       "price": 39.99,
       "description": "Complete PD interior with cells, offices, and armory",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Police+Department",
-      "tags": ["mlo", "police", "leo", "government"]
+      "tags": [
+        "mlo",
+        "police",
+        "leo",
+        "government"
+      ]
     },
     {
       "id": "map-warehouse-001",
@@ -90,7 +130,12 @@
       "price": 29.99,
       "description": "Large warehouse with office space and loading docks",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Warehouse",
-      "tags": ["mlo", "warehouse", "industrial", "business"]
+      "tags": [
+        "mlo",
+        "warehouse",
+        "industrial",
+        "business"
+      ]
     },
     {
       "id": "script-job-001",
@@ -100,7 +145,13 @@
       "price": 44.99,
       "description": "Full mechanic job with repair mini-games and progression",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Mechanic+Job",
-      "tags": ["script", "job", "mechanic", "qbcore", "esx"]
+      "tags": [
+        "script",
+        "job",
+        "mechanic",
+        "qbcore",
+        "esx"
+      ]
     },
     {
       "id": "script-job-002",
@@ -110,7 +161,12 @@
       "price": 34.99,
       "description": "Complete pizza delivery with GPS routing and rewards",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Pizza+Delivery",
-      "tags": ["script", "job", "delivery", "food"]
+      "tags": [
+        "script",
+        "job",
+        "delivery",
+        "food"
+      ]
     },
     {
       "id": "script-job-003",
@@ -120,7 +176,12 @@
       "price": 39.99,
       "description": "Advanced taxi system with NPC and player fares",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Taxi+System",
-      "tags": ["script", "job", "taxi", "transport"]
+      "tags": [
+        "script",
+        "job",
+        "taxi",
+        "transport"
+      ]
     },
     {
       "id": "script-housing-001",
@@ -130,7 +191,12 @@
       "price": 59.99,
       "description": "Complete housing with furniture, garage, and inventory",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Housing+System",
-      "tags": ["script", "housing", "property", "inventory"]
+      "tags": [
+        "script",
+        "housing",
+        "property",
+        "inventory"
+      ]
     },
     {
       "id": "script-housing-002",
@@ -140,7 +206,12 @@
       "price": 44.99,
       "description": "Multi-floor apartment system with rent payments",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Apartments",
-      "tags": ["script", "housing", "apartment", "rental"]
+      "tags": [
+        "script",
+        "housing",
+        "apartment",
+        "rental"
+      ]
     },
     {
       "id": "script-vehicle-001",
@@ -150,7 +221,12 @@
       "price": 29.99,
       "description": "Realistic key system with lock/unlock and engine toggle",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Vehicle+Keys",
-      "tags": ["script", "vehicle", "keys", "security"]
+      "tags": [
+        "script",
+        "vehicle",
+        "keys",
+        "security"
+      ]
     },
     {
       "id": "script-vehicle-002",
@@ -160,7 +236,12 @@
       "price": 49.99,
       "description": "Full dealership with test drives and financing",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Car+Dealership",
-      "tags": ["script", "vehicle", "dealership", "business"]
+      "tags": [
+        "script",
+        "vehicle",
+        "dealership",
+        "business"
+      ]
     },
     {
       "id": "script-util-001",
@@ -170,7 +251,12 @@
       "price": 54.99,
       "description": "Complete banking with ATMs, accounts, and transactions",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Banking+System",
-      "tags": ["script", "banking", "economy", "finance"]
+      "tags": [
+        "script",
+        "banking",
+        "economy",
+        "finance"
+      ]
     },
     {
       "id": "script-util-002",
@@ -180,7 +266,12 @@
       "price": 64.99,
       "description": "Realistic phone with apps, contacts, and messages",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Phone+System",
-      "tags": ["script", "phone", "communication", "apps"]
+      "tags": [
+        "script",
+        "phone",
+        "communication",
+        "apps"
+      ]
     },
     {
       "id": "weapon-pistol-001",
@@ -190,7 +281,12 @@
       "price": 19.99,
       "description": "5 custom Glock variants with unique textures",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Glock+Pack",
-      "tags": ["weapon", "pistol", "glock", "firearms"]
+      "tags": [
+        "weapon",
+        "pistol",
+        "glock",
+        "firearms"
+      ]
     },
     {
       "id": "weapon-pistol-002",
@@ -200,7 +296,12 @@
       "price": 17.99,
       "description": "Premium Desert Eagle skins and variants",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Desert+Eagle",
-      "tags": ["weapon", "pistol", "deagle", "firearms"]
+      "tags": [
+        "weapon",
+        "pistol",
+        "deagle",
+        "firearms"
+      ]
     },
     {
       "id": "weapon-rifle-001",
@@ -210,7 +311,12 @@
       "price": 24.99,
       "description": "Military-grade AR-15 with attachments",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=AR-15",
-      "tags": ["weapon", "rifle", "assault", "tactical"]
+      "tags": [
+        "weapon",
+        "rifle",
+        "assault",
+        "tactical"
+      ]
     },
     {
       "id": "weapon-rifle-002",
@@ -220,7 +326,12 @@
       "price": 29.99,
       "description": "3 high-quality sniper rifles with scopes",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Sniper+Rifles",
-      "tags": ["weapon", "rifle", "sniper", "longrange"]
+      "tags": [
+        "weapon",
+        "rifle",
+        "sniper",
+        "longrange"
+      ]
     },
     {
       "id": "weapon-melee-001",
@@ -230,7 +341,12 @@
       "price": 14.99,
       "description": "10 custom melee weapons including bats and knives",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Melee+Weapons",
-      "tags": ["weapon", "melee", "knife", "bat"]
+      "tags": [
+        "weapon",
+        "melee",
+        "knife",
+        "bat"
+      ]
     },
     {
       "id": "weapon-pack-001",
@@ -240,7 +356,12 @@
       "price": 79.99,
       "description": "50+ weapons including pistols, rifles, and melee",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Arsenal+Bundle",
-      "tags": ["weapon", "bundle", "pack", "complete"]
+      "tags": [
+        "weapon",
+        "bundle",
+        "pack",
+        "complete"
+      ]
     },
     {
       "id": "clothing-top-001",
@@ -250,7 +371,12 @@
       "price": 12.99,
       "description": "20 high-quality designer shirts for MP Male/Female",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Designer+Shirts",
-      "tags": ["clothing", "shirt", "designer", "fashion"]
+      "tags": [
+        "clothing",
+        "shirt",
+        "designer",
+        "fashion"
+      ]
     },
     {
       "id": "clothing-top-002",
@@ -260,7 +386,12 @@
       "price": 15.99,
       "description": "15 custom streetwear hoodies with unique designs",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Hoodies",
-      "tags": ["clothing", "hoodie", "streetwear", "casual"]
+      "tags": [
+        "clothing",
+        "hoodie",
+        "streetwear",
+        "casual"
+      ]
     },
     {
       "id": "clothing-bottom-001",
@@ -270,7 +401,12 @@
       "price": 11.99,
       "description": "Designer jeans in multiple colors and styles",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Jeans",
-      "tags": ["clothing", "jeans", "pants", "fashion"]
+      "tags": [
+        "clothing",
+        "jeans",
+        "pants",
+        "fashion"
+      ]
     },
     {
       "id": "clothing-bottom-002",
@@ -280,7 +416,12 @@
       "price": 13.99,
       "description": "Tactical cargo pants for both genders",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Cargo+Pants",
-      "tags": ["clothing", "cargo", "tactical", "pants"]
+      "tags": [
+        "clothing",
+        "cargo",
+        "tactical",
+        "pants"
+      ]
     },
     {
       "id": "clothing-shoes-001",
@@ -290,7 +431,12 @@
       "price": 16.99,
       "description": "25 luxury brand sneakers including Jordans and Yeezys",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Sneakers",
-      "tags": ["clothing", "shoes", "sneakers", "luxury"]
+      "tags": [
+        "clothing",
+        "shoes",
+        "sneakers",
+        "luxury"
+      ]
     },
     {
       "id": "clothing-shoes-002",
@@ -300,7 +446,12 @@
       "price": 14.99,
       "description": "Professional dress shoes for business roleplay",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Formal+Shoes",
-      "tags": ["clothing", "shoes", "formal", "business"]
+      "tags": [
+        "clothing",
+        "shoes",
+        "formal",
+        "business"
+      ]
     },
     {
       "id": "clothing-acc-001",
@@ -310,7 +461,12 @@
       "price": 9.99,
       "description": "15 luxury watches including Rolex and AP",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Watches",
-      "tags": ["clothing", "watch", "accessories", "luxury"]
+      "tags": [
+        "clothing",
+        "watch",
+        "accessories",
+        "luxury"
+      ]
     },
     {
       "id": "clothing-acc-002",
@@ -320,7 +476,27 @@
       "price": 11.99,
       "description": "Gold chains, rings, and earrings for character customization",
       "image": "https://via.placeholder.com/400x300/1a1a1a/ff2d95?text=Jewelry",
-      "tags": ["clothing", "jewelry", "chain", "accessories"]
+      "tags": [
+        "clothing",
+        "jewelry",
+        "chain",
+        "accessories"
+      ]
+    },
+    {
+      "id": "script-rtxtv",
+      "name": "RTX-TV OpenSource",
+      "category": "scripts",
+      "subcategory": "rtx",
+      "price": 20,
+      "description": "Open Source TV Script",
+      "image": "https://i.ytimg.com/vi/wqh3ZoSNDYI/maxresdefault.jpg",
+      "tags": [
+        "esx",
+        "qbcore",
+        "qbox"
+      ],
+      "video": "https://www.youtube.com/watch?v=wqh3ZoSNDYI&t"
     }
   ]
 }

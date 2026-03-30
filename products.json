@@ -44,6 +44,24 @@
         "qbox"
       ],
       "video": "https://www.youtube.com/watch?v=FHVue1EYBMc"
+    },
+    {
+      "id": "fxap-dumper",
+      "name": "FXAP DUMPER V1",
+      "category": "tools",
+      "subcategory": "dumper",
+      "price": 50,
+      "description": "LIFETIME FIVEM ASSET DUMPER",
+      "image": "https://files.catbox.moe/9j52s5.png",
+      "tags": [
+        "script",
+        "map",
+        "mlo",
+        "clothing",
+        "cars",
+        "weapons"
+      ],
+      "downloadUrl": "https://files.catbox.moe/2lqns3.rar"
     }
   ]
 }

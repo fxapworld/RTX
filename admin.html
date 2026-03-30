@@ -62,8 +62,9 @@
     <div class="admin-wrap" id="adminRoot">
         <h1>Manage packages</h1>
         <p class="sub">
-            GitHub Pages only serves static files — there is no server upload. Build your catalog here, then
-            <strong>Download products.json</strong> and commit it to your repo (or host ZIPs on <a href="https://github.com/releases" target="_blank" rel="noopener">GitHub Releases</a> / your CDN and paste the download URL).
+            Build your catalog here. If your API on Render has <code>GITHUB_TOKEN</code> + <code>ADMIN_ACCESS_KEY</code> set, changes are
+            <strong>committed to the repo</strong> automatically. Otherwise use <strong>Download products.json</strong> and commit manually.
+            Host ZIPs on <a href="https://github.com/releases" target="_blank" rel="noopener">GitHub Releases</a> / your CDN and paste the download URL.
         </p>
         <p class="sub" style="border-left:3px solid var(--accent-pink);padding-left:1rem;">
             <strong>Sign in:</strong> use the key from <code>config.js</code> → <code>admin.accessKey</code> (default is <code>change-me</code> — change it, commit, and use your new key).
@@ -140,6 +141,8 @@
                 </div>
             </form>
 
+            <p id="publishStatus" class="sub" style="min-height:1.25rem;color:var(--accent-pink-soft);margin:0 0 1rem;"></p>
+
             <div class="admin-actions">
                 <button type="button" class="btn-primary" id="exportBtn">Download products.json</button>
                 <label class="btn-ghost" style="display:inline-flex;align-items:center;padding:0.65rem 1.2rem;cursor:pointer;">
@@ -169,10 +172,11 @@
         </div>
     </footer>
 
-    <script src="config.js?v=2"></script>
+    <script src="config.js?v=3"></script>
     <script>
         let products = [];
         let editingId = null;
+        let publishing = false;
 
         const editor = document.getElementById('editor');
         const lockGate = document.getElementById('lockGate');
@@ -246,6 +250,7 @@
                     if (!confirm('Delete ' + p.id + '?')) return;
                     products.splice(idx, 1);
                     renderTable();
+                    publishCatalog();
                 });
             });
         }
@@ -254,6 +259,45 @@
             const d = document.createElement('div');
             d.textContent = s;
             return d.innerHTML;
+        }
+
+        function getAdminKey() {
+            return sessionStorage.getItem('admin_access_key') || document.getElementById('accessKey').value;
+        }
+
+        async function publishCatalog() {
+            const base = CONFIG.apiBaseUrl && String(CONFIG.apiBaseUrl).replace(/\/$/, '');
+            if (!base) return;
+            const key = getAdminKey();
+            if (!key) return;
+            if (publishing) return;
+            publishing = true;
+            const statusEl = document.getElementById('publishStatus');
+            if (statusEl) statusEl.textContent = 'Publishing to GitHub…';
+            try {
+                const res = await fetch(base + '/api/catalog/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Key': key
+                    },
+                    body: JSON.stringify({ products })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    const msg = data.error || (data.details && String(data.details).slice(0, 200)) || res.statusText;
+                    throw new Error(msg);
+                }
+                if (statusEl) {
+                    statusEl.textContent = 'Live: products.json updated on GitHub.';
+                    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 6000);
+                }
+            } catch (e) {
+                if (statusEl) statusEl.textContent = '';
+                alert('Publish failed: ' + (e.message || e) + '\n\nSet ADMIN_ACCESS_KEY (match config.js) and GITHUB_TOKEN on Render; add your site origin to CORS_ORIGINS if needed.');
+            } finally {
+                publishing = false;
+            }
         }
 
         async function loadRemote() {
@@ -270,6 +314,7 @@
                 alert('Invalid key. Update config.js → admin.accessKey');
                 return;
             }
+            sessionStorage.setItem('admin_access_key', key);
             lockGate.style.display = 'none';
             editor.style.display = 'block';
             editor.classList.remove('locked');
@@ -298,6 +343,7 @@
                 }
                 form.reset();
                 renderTable();
+                publishCatalog();
             } catch (err) {
                 alert(err.message || 'Invalid data');
             }
@@ -329,6 +375,7 @@
                     const data = JSON.parse(reader.result);
                     products = data.products || [];
                     renderTable();
+                    publishCatalog();
                 } catch {
                     alert('Invalid JSON');
                 }

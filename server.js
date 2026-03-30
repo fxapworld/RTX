@@ -7,6 +7,8 @@
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, FRONTEND_URL,
  *       DISCORD_PURCHASE_WEBHOOK_URL (optional staff notifications)
+ * Catalog publish: ADMIN_ACCESS_KEY (match config.js admin.accessKey), GITHUB_TOKEN,
+ *       GITHUB_OWNER, GITHUB_REPO, GITHUB_BRANCH, GITHUB_CATALOG_PATH, CORS_ORIGINS (optional)
  */
 
 const express = require('express');
@@ -36,13 +38,25 @@ const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DISCORD_PURCHASE_WEBHOOK_URL = process.env.DISCORD_PURCHASE_WEBHOOK_URL;
 
+const ADMIN_ACCESS_KEY = process.env.ADMIN_ACCESS_KEY;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_OWNER = process.env.GITHUB_OWNER || 'fxapworld';
+const GITHUB_REPO = process.env.GITHUB_REPO || 'RTX';
+const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
+const GITHUB_CATALOG_PATH = process.env.GITHUB_CATALOG_PATH || 'products.json';
+const CORS_EXTRA = (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
 const app = express();
 
 app.use(cors({
     origin: (origin, cb) => {
         if (!origin) return cb(null, true);
-        if (!FRONTEND_ORIGIN) return cb(null, true);
-        if (origin === FRONTEND_ORIGIN) return cb(null, true);
+        if (FRONTEND_ORIGIN && origin === FRONTEND_ORIGIN) return cb(null, true);
+        if (CORS_EXTRA.includes(origin)) return cb(null, true);
+        if (!FRONTEND_ORIGIN && CORS_EXTRA.length === 0) return cb(null, true);
         return cb(null, false);
     },
     credentials: true
@@ -81,6 +95,81 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 });
 
 app.use(express.json());
+
+const githubHeaders = () => ({
+    Authorization: `Bearer ${GITHUB_TOKEN}`,
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+});
+
+app.post('/api/catalog/save', async (req, res) => {
+    const key = req.headers['x-admin-key'];
+    if (!ADMIN_ACCESS_KEY || key !== ADMIN_ACCESS_KEY) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!GITHUB_TOKEN) {
+        return res.status(503).json({ error: 'GITHUB_TOKEN not set on server' });
+    }
+
+    const { products } = req.body;
+    if (!Array.isArray(products)) {
+        return res.status(400).json({ error: 'Body must include products array' });
+    }
+
+    const content = JSON.stringify({ products }, null, 2);
+    const base64 = Buffer.from(content, 'utf8').toString('base64');
+    const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(GITHUB_CATALOG_PATH)}`;
+
+    try {
+        const getRes = await fetch(`${apiUrl}?ref=${encodeURIComponent(GITHUB_BRANCH)}`, {
+            headers: githubHeaders()
+        });
+
+        let sha = null;
+        if (getRes.status === 404) {
+            sha = null;
+        } else if (!getRes.ok) {
+            const t = await getRes.text();
+            console.error('GitHub GET products.json', getRes.status, t);
+            return res.status(500).json({ error: 'GitHub read failed', details: t.slice(0, 500) });
+        } else {
+            const file = await getRes.json();
+            sha = file.sha;
+        }
+
+        const putBody = {
+            message: `catalog: update via admin (${new Date().toISOString()})`,
+            content: base64,
+            branch: GITHUB_BRANCH
+        };
+        if (sha) putBody.sha = sha;
+
+        const putRes = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                ...githubHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(putBody)
+        });
+
+        if (!putRes.ok) {
+            const t = await putRes.text();
+            console.error('GitHub PUT products.json', putRes.status, t);
+            return res.status(500).json({ error: 'GitHub commit failed', details: t.slice(0, 500) });
+        }
+
+        const result = await putRes.json();
+        res.json({
+            success: true,
+            commit: result.commit && result.commit.sha,
+            url: result.content && result.content.html_url
+        });
+    } catch (e) {
+        console.error('catalog/save', e);
+        res.status(500).json({ error: e.message || 'Server error' });
+    }
+});
 
 app.post('/api/create-checkout-session', async (req, res) => {
     if (!stripe) {

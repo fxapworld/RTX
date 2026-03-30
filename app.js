@@ -132,7 +132,7 @@ function bindProductCardEvents(scopeEl) {
 }
 
 function renderSlidingAllProducts(products, grid) {
-    const cardWidth = window.innerWidth <= 768 ? 260 : 300;
+    const cardWidth = window.innerWidth <= 768 ? 260 : 340;
     const gap = 20;
     const onePassWidth = Math.max((cardWidth * products.length) + (gap * Math.max(products.length - 1, 0)), cardWidth + gap);
     const viewport = Math.max(window.innerWidth - 120, 900);

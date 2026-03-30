@@ -8,10 +8,10 @@
     --primary-black: #050508;
     --secondary-black: #0f0f12;
     --surface: #141418;
-    --accent-pink: #ff2d95;
-    --accent-pink-soft: #ff6eb4;
-    --accent-pink-dim: #c9186e;
-    --glow-pink: rgba(255, 45, 149, 0.45);
+    --accent-pink: #e31837;
+    --accent-pink-soft: #ff3b57;
+    --accent-pink-dim: #b80f2b;
+    --glow-pink: rgba(227, 24, 55, 0.45);
     --pure-white: #f8f6fa;
     --muted: #9a939e;
     --border-gray: #2a2830;
@@ -19,7 +19,7 @@
 
 body {
     font-family: 'Segoe UI', system-ui, sans-serif;
-    background: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 45, 149, 0.12), transparent 50%),
+    background: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(227, 24, 55, 0.12), transparent 50%),
         var(--primary-black);
     color: var(--pure-white);
     line-height: 1.6;
@@ -228,6 +228,29 @@ main {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 2rem;
     margin-bottom: 2rem;
+}
+
+.products-slider {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    mask-image: linear-gradient(to right, transparent 0, black 4%, black 96%, transparent 100%);
+}
+
+.products-track {
+    display: flex;
+    gap: 1.25rem;
+    width: max-content;
+    animation: slider-left 75s linear infinite;
+}
+
+.products-track:hover {
+    animation-play-state: paused;
+}
+
+.slider-card {
+    width: 300px;
+    flex: 0 0 300px;
 }
 
 .product-card {
@@ -685,6 +708,11 @@ footer p {
     color: var(--accent-pink);
 }
 
+@keyframes slider-left {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .header-content {
@@ -712,6 +740,15 @@ footer p {
 
     .products-grid {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+
+    .slider-card {
+        width: 260px;
+        flex-basis: 260px;
+    }
+
+    .products-track {
+        animation-duration: 55s;
     }
 
     .search-box input {
@@ -827,7 +864,7 @@ footer p {
 }
 
 .btn-outline:hover {
-    background: rgba(255, 45, 149, 0.15);
+    background: rgba(227, 24, 55, 0.15);
     color: var(--pure-white);
 }
 

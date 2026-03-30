@@ -1,4 +1,4 @@
-// RTX storefront
+// FXAP WORLD storefront
 
 let allProducts = [];
 let filteredProducts = [];
@@ -96,22 +96,12 @@ document.addEventListener('click', (e) => {
     if (e.target === modal) closeProductModal();
 });
 
-function displayProducts(products) {
-    const grid = document.getElementById('productsGrid');
-    const noResults = document.getElementById('noResults');
-
-    if (products.length === 0) {
-        grid.innerHTML = '';
-        noResults.style.display = 'block';
-        return;
-    }
-
-    noResults.style.display = 'none';
-    grid.innerHTML = products.map(product => {
-        const hasVideo = !!(product.video && getVideoEmbedUrl(product.video));
-        const idAttr = escapeHtml(product.id).replace(/"/g, '&quot;');
-        return `
-        <div class="product-card" data-id="${idAttr}">
+function buildProductCardHTML(product, sliderMode = false) {
+    const hasVideo = !!(product.video && getVideoEmbedUrl(product.video));
+    const idAttr = escapeHtml(product.id).replace(/"/g, '&quot;');
+    const cardClasses = sliderMode ? 'product-card slider-card' : 'product-card';
+    return `
+        <div class="${cardClasses}" data-id="${idAttr}">
             ${hasVideo ? '<span class="video-badge">Video</span>' : ''}
             <img src="${escapeHtml(product.image)}" alt="" class="product-image">
             <div class="product-info">
@@ -120,23 +110,62 @@ function displayProducts(products) {
                 <p class="product-description">${escapeHtml(product.description)}</p>
                 <div class="product-footer">
                     <span class="product-price">$${product.price.toFixed(2)}</span>
-                    <button type="button" class="add-to-cart-btn">
-                        Add to Cart
-                    </button>
+                    <button type="button" class="add-to-cart-btn">Add to Cart</button>
                 </div>
             </div>
         </div>
     `;
-    }).join('');
+}
 
-    grid.querySelectorAll('.product-card').forEach((card, i) => {
-        const product = products[i];
+function bindProductCardEvents(scopeEl) {
+    scopeEl.querySelectorAll('.product-card').forEach((card) => {
+        const id = card.dataset.id;
+        if (!id) return;
         const btn = card.querySelector('.add-to-cart-btn');
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            addToCart(product.id);
-        });
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                addToCart(id);
+            });
+        }
     });
+}
+
+function renderSlidingAllProducts(products, grid) {
+    const onePass = products.map((p) => buildProductCardHTML(p, true)).join('');
+    grid.innerHTML = `
+        <div class="products-slider">
+            <div class="products-track">
+                ${onePass}
+                ${onePass}
+            </div>
+        </div>
+    `;
+    bindProductCardEvents(grid);
+}
+
+function displayProducts(products) {
+    const grid = document.getElementById('productsGrid');
+    const noResults = document.getElementById('noResults');
+    const isAllProductsView =
+        currentCategory === null &&
+        currentSubcategory === null &&
+        products === allProducts;
+
+    if (products.length === 0) {
+        grid.innerHTML = '';
+        noResults.style.display = 'block';
+        return;
+    }
+
+    noResults.style.display = 'none';
+    if (isAllProductsView) {
+        renderSlidingAllProducts(products, grid);
+        return;
+    }
+
+    grid.innerHTML = products.map((product) => buildProductCardHTML(product)).join('');
+    bindProductCardEvents(grid);
 }
 
 function filterByCategory(category, subcategory) {
@@ -204,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function showNotification(message, type = 'success') {
-    const bg = type === 'success' ? '#ff2d95' : '#ff4466';
+    const bg = type === 'success' ? '#e31837' : '#ff4466';
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.style.cssText = `
@@ -215,7 +244,7 @@ function showNotification(message, type = 'success') {
         color: white;
         padding: 1rem 2rem;
         border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(255, 45, 149, 0.35);
+        box-shadow: 0 4px 12px rgba(227, 24, 55, 0.35);
         z-index: 10000;
         animation: slideIn 0.3s ease-out;
     `;

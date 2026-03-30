@@ -172,7 +172,7 @@
         </div>
     </footer>
 
-    <script src="config.js?v=3"></script>
+    <script src="config.js?v=4"></script>
     <script>
         let products = [];
         let editingId = null;
@@ -267,12 +267,21 @@
 
         async function publishCatalog() {
             const base = CONFIG.apiBaseUrl && String(CONFIG.apiBaseUrl).replace(/\/$/, '');
-            if (!base) return;
+            const statusEl = document.getElementById('publishStatus');
+            if (!base) {
+                if (statusEl) {
+                    statusEl.textContent = 'Not pushed to GitHub — set apiBaseUrl in config.js on the deployed site, or use Download products.json and commit.';
+                    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 10000);
+                }
+                return;
+            }
             const key = getAdminKey();
-            if (!key) return;
+            if (!key) {
+                if (statusEl) statusEl.textContent = 'Unlock again with your access key to publish.';
+                return;
+            }
             if (publishing) return;
             publishing = true;
-            const statusEl = document.getElementById('publishStatus');
             if (statusEl) statusEl.textContent = 'Publishing to GitHub…';
             try {
                 const res = await fetch(base + '/api/catalog/save', {
@@ -289,8 +298,8 @@
                     throw new Error(msg);
                 }
                 if (statusEl) {
-                    statusEl.textContent = 'Live: products.json updated on GitHub.';
-                    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 6000);
+                    statusEl.textContent = 'Committed to GitHub. If the store still looks old, wait 1–2 min for Pages to rebuild, then refresh.';
+                    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 12000);
                 }
             } catch (e) {
                 if (statusEl) statusEl.textContent = '';

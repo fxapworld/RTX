@@ -20,7 +20,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadProducts() {
     try {
-        const response = await fetch('products.json');
+        // Bust cache: otherwise browsers/CDNs keep serving an old products.json after you publish edits.
+        const response = await fetch('products.json?cb=' + Date.now(), { cache: 'no-store' });
         const data = await response.json();
         allProducts = data.products;
         filteredProducts = allProducts;

@@ -9,6 +9,8 @@
  *       DISCORD_PURCHASE_WEBHOOK_URL (optional staff notifications)
  * Catalog publish: ADMIN_ACCESS_KEY (match config.js admin.accessKey), GITHUB_TOKEN,
  *       GITHUB_OWNER, GITHUB_REPO, GITHUB_BRANCH, GITHUB_CATALOG_PATH, CORS_ORIGINS (optional)
+ * Post-purchase: SMTP_USER, SMTP_PASS (Gmail app password), optional MAIL_FROM, SMTP_HOST, SMTP_PORT
+ *       DISCORD_CUSTOMER_ROLE_ID (default 1488313041442574367), CATALOG_URL (optional override for products.json)
  */
 
 const express = require('express');
@@ -37,6 +39,24 @@ const PAYPAL_API = PAYPAL_MODE === 'sandbox'
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DISCORD_PURCHASE_WEBHOOK_URL = process.env.DISCORD_PURCHASE_WEBHOOK_URL;
+/** Assigned after successful Stripe checkout when buyer signed in with Discord */
+const DISCORD_CUSTOMER_ROLE_ID = process.env.DISCORD_CUSTOMER_ROLE_ID || '1488313041442574367';
+
+const nodemailer = require('nodemailer');
+let mailTransporter = null;
+function getMailTransporter() {
+    if (mailTransporter) return mailTransporter;
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    if (!user || !pass) return null;
+    mailTransporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: { user, pass }
+    });
+    return mailTransporter;
+}
 
 const ADMIN_ACCESS_KEY = process.env.ADMIN_ACCESS_KEY;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
@@ -88,7 +108,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         }
         const userId = session.metadata && session.metadata.userId;
         await notifyPurchaseToDiscordWebhook(session, items);
-        await processOrder(userId, items);
+        await processOrder(session, userId, items);
     }
 
     res.json({ received: true });
@@ -200,7 +220,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
         const compactItems = items.map((i) => ({
             id: i.id,
             name: i.name,
-            price: i.price
+            price: i.price,
+            u: i.downloadUrl || ''
         }));
         let itemsJson = JSON.stringify(compactItems);
         if (itemsJson.length > 450) {
@@ -435,16 +456,142 @@ async function notifyPurchaseToDiscordWebhook(session, items) {
     }
 }
 
-async function processOrder(userId, items) {
-    if (!items || !items.length) return;
-    console.log(`Processing order for user ${userId}:`, items);
+function normalizeMetaItem(item) {
+    if (typeof item === 'string') {
+        return { id: item, name: item, price: null, downloadUrl: null };
+    }
+    return {
+        id: String(item.id || ''),
+        name: item.name || item.id,
+        price: item.price,
+        downloadUrl: item.u || item.downloadUrl || null
+    };
+}
 
-    if (!DISCORD_BOT_TOKEN || !userId) return;
+async function fetchCatalogProducts() {
+    const base = (process.env.CATALOG_URL || (FRONTEND_URL ? `${FRONTEND_URL}/products.json` : '')).trim();
+    if (!base) throw new Error('FRONTEND_URL or CATALOG_URL required for catalog');
+    const res = await fetch(base);
+    if (!res.ok) throw new Error(`catalog HTTP ${res.status}`);
+    return res.json();
+}
+
+async function enrichItemsWithDownloads(rawItems) {
+    const normalized = rawItems.map(normalizeMetaItem);
+    let catalogById = {};
+    const needCatalog = normalized.some((it) => !it.downloadUrl);
+    if (needCatalog) {
+        try {
+            const data = await fetchCatalogProducts();
+            const list = data.products || [];
+            catalogById = Object.fromEntries(list.map((p) => [p.id, p]));
+        } catch (e) {
+            console.error('enrichItemsWithDownloads catalog fetch', e.message);
+        }
+    }
+    return normalized.map((it) => {
+        const p = catalogById[it.id];
+        const downloadUrl = it.downloadUrl || (p && p.downloadUrl) || null;
+        const name = (p && p.name) || it.name;
+        const price = it.price != null ? it.price : p && p.price;
+        return { id: it.id, name, price, downloadUrl };
+    });
+}
+
+function escapeHtmlText(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+async function sendPurchaseEmail(to, enrichedItems, sessionId) {
+    const transport = getMailTransporter();
+    if (!transport || !to) return;
+
+    const fromAddr = process.env.MAIL_FROM || `FXAPWORLD <${process.env.SMTP_USER}>`;
+    const listHtml = enrichedItems
+        .map((it) => {
+            const name = escapeHtmlText(it.name);
+            if (it.downloadUrl && /^https?:\/\//i.test(it.downloadUrl)) {
+                const u = escapeHtmlText(it.downloadUrl);
+                return `<li><strong>${name}</strong><br><a href="${u}">${u}</a></li>`;
+            }
+            return `<li><strong>${name}</strong> — link will be sent by support if missing.</li>`;
+        })
+        .join('');
+
+    const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#111;color:#eee;padding:16px;">
+<p>Thank you for your purchase from <strong>FXAPWORLD</strong>.</p>
+<p>Order reference: <code>${escapeHtmlText(sessionId)}</code></p>
+<p>Your download links:</p>
+<ul>${listHtml}</ul>
+<p style="color:#888;font-size:14px;">If you signed in with Discord before checkout, you also have the customer role in our server.</p>
+</body></html>`;
+
+    await transport.sendMail({
+        from: fromAddr,
+        to,
+        subject: 'Your FXAPWORLD purchase — download links',
+        html
+    });
+}
+
+async function assignCustomerRole(userId) {
+    if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID || !DISCORD_CUSTOMER_ROLE_ID || !userId) return;
+
+    const url = `https://discord.com/api/guilds/${DISCORD_GUILD_ID}/members/${userId}/roles/${DISCORD_CUSTOMER_ROLE_ID}`;
+    const res = await fetch(url, {
+        method: 'PUT',
+        headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` }
+    });
+
+    if (!res.ok && res.status !== 204) {
+        const t = await res.text();
+        console.error('assignCustomerRole', res.status, t);
+    }
+}
+
+async function processOrder(session, userId, items) {
+    if (!items || !items.length) return;
+    console.log(`Processing order session=${session.id} userId=${userId || '(none)'}`, items);
+
+    let enriched;
+    try {
+        enriched = await enrichItemsWithDownloads(items);
+    } catch (e) {
+        console.error('processOrder enrich', e);
+        enriched = items.map(normalizeMetaItem);
+    }
+
+    const email =
+        (session.customer_details && session.customer_details.email) ||
+        session.customer_email ||
+        '';
+
+    if (email) {
+        try {
+            await sendPurchaseEmail(email, enriched, session.id);
+        } catch (error) {
+            console.error('sendPurchaseEmail', error);
+        }
+    } else {
+        console.warn('No buyer email on Stripe session', session.id);
+    }
+
+    if (!userId || !DISCORD_BOT_TOKEN) return;
 
     try {
-        await sendDiscordDM(userId, items);
+        await assignCustomerRole(userId);
     } catch (error) {
-        console.error('processOrder', error);
+        console.error('assignCustomerRole', error);
+    }
+
+    try {
+        await sendDiscordDM(userId, enriched);
+    } catch (error) {
+        console.error('sendDiscordDM', error);
     }
 }
 
@@ -464,17 +611,31 @@ async function sendDiscordDM(userId, items) {
         return;
     }
 
+    const lines = items.map((item) => {
+        const price = item.price != null ? ` — $${Number(item.price).toFixed(2)}` : '';
+        const link = item.downloadUrl && /^https?:\/\//i.test(item.downloadUrl)
+            ? `\n  ${item.downloadUrl}`
+            : '\n  (download link in your email)';
+        return `• ${item.name}${price}${link}`;
+    });
+
+    const embedItems = items.slice(0, 25);
+    const extra = items.length > 25 ? `\n\n_+${items.length - 25} more — see your email._` : '';
+
     const message = {
-        content: `Thank you for your purchase from FXAPWORLD!\n\nYou purchased:\n${items.map((item) => `- ${item.name} ($${item.price})`).join('\n')}\n\nYour download links will follow.`,
+        content:
+            `Thank you for your purchase from **FXAPWORLD**!\n\n` +
+            `${lines.join('\n\n')}${extra}\n\n` +
+            `_You were given the customer role in our Discord._`,
         embeds: [
             {
                 title: 'Purchase successful',
                 description: 'Your FiveM resources',
                 color: 0xff2d95,
-                fields: items.map((item) => ({
-                    name: item.name,
-                    value: `$${item.price}`,
-                    inline: true
+                fields: embedItems.map((item) => ({
+                    name: String(item.name || item.id).slice(0, 256),
+                    value: (item.downloadUrl ? item.downloadUrl : 'See email for links').slice(0, 1024),
+                    inline: false
                 })),
                 footer: { text: 'FXAPWORLD — FiveM resources' }
             }

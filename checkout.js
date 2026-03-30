@@ -102,7 +102,8 @@ async function startStripeCheckout() {
                 items: cart.map(i => ({
                     id: i.id,
                     name: i.name,
-                    price: i.price
+                    price: i.price,
+                    downloadUrl: i.downloadUrl || ''
                 })),
                 userId: user ? user.id : '',
                 username: user ? user.username : ''
@@ -291,7 +292,7 @@ function showPaymentSuccess(order) {
             <h2 style="color: #ff2d95; margin-bottom: 1rem;">Payment successful</h2>
             <p style="color: #fff; margin-bottom: 1rem;">Order #${escapeCheckoutHtml(order.orderId)}</p>
             <p style="color: #ccc; margin-bottom: 1.5rem;">
-                Thank you for your purchase. Deliver your FiveM files via Discord or email (configure your backend webhook).
+                Download links were sent to the email you entered in Stripe. If you signed in with Discord, check your DMs and your new server role.
             </p>
             <button type="button" onclick="this.closest('[data-rtx-overlay]').remove()" style="
                 background-color: #ff2d95;

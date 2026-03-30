@@ -119,32 +119,42 @@ async function fetchDiscordUser(accessToken) {
     }
 }
 
-// Join Discord server (requires bot)
+function getApiBaseUrl() {
+    let url = typeof CONFIG !== 'undefined' && CONFIG.apiBaseUrl ? CONFIG.apiBaseUrl : '';
+    if (!url || url === 'YOUR_API_URL') {
+        if (typeof location !== 'undefined' && /\.github\.io$/i.test(location.hostname)) {
+            return 'https://rtx-api.onrender.com';
+        }
+        return '';
+    }
+    return url.replace(/\/$/, '');
+}
+
+// Join Discord server (OAuth guilds.join + backend bot PUT /members)
 async function joinDiscordServer(user) {
-    // Note: This requires a backend server with bot token
-    // This is a placeholder for the frontend implementation
-    
+    const api = getApiBaseUrl();
+    if (!api) {
+        showNotification('Set apiBaseUrl in config.js so we can add you to Discord.', 'error');
+        return;
+    }
     try {
-        // In production, you would call your backend API here
-        // Example:
-        // await fetch('YOUR_BACKEND_URL/api/discord/join', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({
-        //         userId: user.id,
-        //         accessToken: user.accessToken
-        //     })
-        // });
-        
-        console.log('Discord server join would be handled by backend');
-        showNotification('Please join our Discord server to complete setup!');
-        
-        // Open Discord server invite in new tab
-        // Replace with your actual Discord invite link
-        // window.open('https://discord.gg/YOUR_INVITE', '_blank');
-        
+        const res = await fetch(`${api}/api/discord/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: user.id,
+                accessToken: user.accessToken
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+            showNotification('You joined the FXAPWORLD Discord — you can checkout when ready.');
+        } else {
+            showNotification(data.error || 'Could not add you to the server (check bot permissions).', 'error');
+        }
     } catch (error) {
         console.error('Error joining Discord server:', error);
+        showNotification('Discord join request failed', 'error');
     }
 }
 

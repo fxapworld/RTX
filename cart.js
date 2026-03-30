@@ -32,7 +32,8 @@ function addToCart(productId) {
         price: product.price,
         image: product.image,
         category: product.category,
-        subcategory: product.subcategory
+        subcategory: product.subcategory,
+        downloadUrl: product.downloadUrl || ''
     });
     
     saveCart();

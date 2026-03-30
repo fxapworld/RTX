@@ -233,11 +233,9 @@ main {
 .products-slider {
     position: relative;
     overflow: hidden;
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    padding: 0 48px;
-    border-left: 1px solid rgba(227, 24, 55, 0.35);
-    border-right: 1px solid rgba(227, 24, 55, 0.35);
+    width: 100%;
+    margin-left: 0;
+    padding: 0;
     margin-bottom: 2rem;
     mask-image: linear-gradient(to right, transparent 0, black 2%, black 98%, transparent 100%);
 }
@@ -759,9 +757,9 @@ footer p {
     }
 
     .products-slider {
-        width: 100vw;
-        margin-left: calc(50% - 50vw);
-        padding: 0 14px;
+        width: 100%;
+        margin-left: 0;
+        padding: 0;
     }
 
     .search-box input {

@@ -233,8 +233,9 @@ main {
 .products-slider {
     position: relative;
     overflow: hidden;
-    width: min(1600px, calc(100vw - 96px));
-    margin-left: calc(50% - min(800px, calc(50vw - 48px)));
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    padding: 0 48px;
     border-left: 1px solid rgba(227, 24, 55, 0.35);
     border-right: 1px solid rgba(227, 24, 55, 0.35);
     margin-bottom: 2rem;
@@ -246,7 +247,7 @@ main {
     gap: 1.25rem;
     width: max-content;
     will-change: transform;
-    animation: slider-left 40s linear infinite;
+    animation: slider-left 20s linear infinite;
 }
 
 .products-slider:hover .products-track,
@@ -754,12 +755,13 @@ footer p {
     }
 
     .products-track {
-        animation-duration: 30s;
+        animation-duration: 16s;
     }
 
     .products-slider {
-        width: calc(100vw - 28px);
-        margin-left: calc(50% - (50vw - 14px));
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+        padding: 0 14px;
     }
 
     .search-box input {

@@ -14,6 +14,36 @@
         "qbox"
       ],
       "video": "https://www.youtube.com/watch?v=wqh3ZoSNDYI&t"
+    },
+    {
+      "id": "script-rtxdrug",
+      "name": "Drug System (Schedule 1 Inspired)",
+      "category": "scripts",
+      "subcategory": "rtx",
+      "price": 20,
+      "description": "OPEN SOURCE",
+      "image": "https://i.ytimg.com/vi/wqh3ZoSNDYI/maxresdefault.jpg",
+      "tags": [
+        "esx",
+        "qbcore",
+        "qbox"
+      ],
+      "video": "https://www.youtube.com/watch?v=pgOPErXXWGg&t=40s"
+    },
+    {
+      "id": "script-rtxsphere",
+      "name": "Sphere (Cinema)",
+      "category": "scripts",
+      "subcategory": "rtx",
+      "price": 20,
+      "description": "OPEN SOURCE",
+      "image": "https://i.ytimg.com/vi/wqh3ZoSNDYI/maxresdefault.jpg",
+      "tags": [
+        "esx",
+        "qbcore",
+        "qbox"
+      ],
+      "video": "https://www.youtube.com/watch?v=FHVue1EYBMc"
     }
   ]
 }

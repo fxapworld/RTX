@@ -132,18 +132,18 @@ function bindProductCardEvents(scopeEl) {
 }
 
 function renderSlidingAllProducts(products, grid) {
-    const approxCardWidth = window.innerWidth <= 768 ? 260 : 300;
+    const cardWidth = window.innerWidth <= 768 ? 260 : 300;
     const gap = 20;
-    const viewport = Math.max(window.innerWidth, 1200);
-    const onePassWidth = Math.max((approxCardWidth + gap) * products.length, approxCardWidth + gap);
-    const repeatCount = Math.max(2, Math.ceil((viewport * 2) / onePassWidth));
+    const onePassWidth = Math.max((cardWidth * products.length) + (gap * Math.max(products.length - 1, 0)), cardWidth + gap);
+    const viewport = Math.max(window.innerWidth - 120, 900);
+    const repeatCount = Math.max(3, Math.ceil((viewport * 2.4) / onePassWidth));
     const repeated = Array.from({ length: repeatCount }, () =>
         products.map((p) => buildProductCardHTML(p, true)).join('')
     ).join('');
 
     grid.innerHTML = `
         <div class="products-slider">
-            <div class="products-track" style="--slide-distance: -${(100 / repeatCount).toFixed(6)}%;">
+            <div class="products-track" style="--slide-distance-px: ${onePassWidth}px;">
                 ${repeated}
             </div>
         </div>

@@ -233,18 +233,20 @@ main {
 .products-slider {
     position: relative;
     overflow: hidden;
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    padding: 0 1rem;
+    width: min(1600px, calc(100vw - 96px));
+    margin-left: calc(50% - min(800px, calc(50vw - 48px)));
+    border-left: 1px solid rgba(227, 24, 55, 0.35);
+    border-right: 1px solid rgba(227, 24, 55, 0.35);
     margin-bottom: 2rem;
-    mask-image: linear-gradient(to right, transparent 0, black 4%, black 96%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, black 2%, black 98%, transparent 100%);
 }
 
 .products-track {
     display: flex;
     gap: 1.25rem;
     width: max-content;
-    animation: slider-left 75s linear infinite;
+    will-change: transform;
+    animation: slider-left 40s linear infinite;
 }
 
 .products-slider:hover .products-track,
@@ -714,7 +716,7 @@ footer p {
 
 @keyframes slider-left {
     from { transform: translateX(0); }
-    to { transform: translateX(var(--slide-distance, -50%)); }
+    to { transform: translateX(calc(-1 * var(--slide-distance-px, 1200px))); }
 }
 
 /* Responsive */
@@ -752,7 +754,12 @@ footer p {
     }
 
     .products-track {
-        animation-duration: 55s;
+        animation-duration: 30s;
+    }
+
+    .products-slider {
+        width: calc(100vw - 28px);
+        margin-left: calc(50% - (50vw - 14px));
     }
 
     .search-box input {

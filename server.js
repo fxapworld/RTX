@@ -1,5 +1,5 @@
 /**
- * RTX payment API — deploy separately from GitHub Pages (Render, Railway, Fly.io, VPS).
+ * FXAPWORLD payment API — deploy separately from GitHub Pages (Render, Railway, Fly.io, VPS).
  *
  * Stripe Dashboard → Webhooks → Endpoint URL must be YOUR API:
  *   https://YOUR-HOST/api/webhook
@@ -100,7 +100,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
             price_data: {
                 currency: 'usd',
                 product_data: {
-                    name: item.name || 'RTX item',
+                    name: item.name || 'FXAPWORLD item',
                     metadata: { product_id: String(item.id || '') }
                 },
                 unit_amount: Math.round(Number(item.price) * 100)
@@ -184,7 +184,7 @@ app.post('/api/paypal/create-order', async (req, res) => {
                             currency_code: 'USD',
                             value: total.toFixed(2)
                         },
-                        description: 'RTX marketplace order',
+                        description: 'FXAPWORLD marketplace order',
                         custom_id: JSON.stringify(items.map((i) => ({ id: i.id, name: i.name })))
                     }
                 ]
@@ -307,7 +307,7 @@ async function notifyPurchaseToDiscordWebhook(session, items) {
     if (itemLines.length > 1020) itemLines = itemLines.slice(0, 1017) + '…';
 
     const embed = {
-        title: 'New RTX purchase',
+        title: 'New FXAPWORLD purchase',
         description: `Stripe Checkout completed.`,
         color: 0xff2d95,
         fields: [
@@ -334,7 +334,7 @@ async function notifyPurchaseToDiscordWebhook(session, items) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 embeds: [embed],
-                username: 'RTX purchases'
+                username: 'FXAPWORLD purchases'
             })
         });
         if (!r.ok) {
@@ -376,7 +376,7 @@ async function sendDiscordDM(userId, items) {
     }
 
     const message = {
-        content: `Thank you for your purchase from RTX!\n\nYou purchased:\n${items.map((item) => `- ${item.name} ($${item.price})`).join('\n')}\n\nYour download links will follow.`,
+        content: `Thank you for your purchase from FXAPWORLD!\n\nYou purchased:\n${items.map((item) => `- ${item.name} ($${item.price})`).join('\n')}\n\nYour download links will follow.`,
         embeds: [
             {
                 title: 'Purchase successful',
@@ -387,7 +387,7 @@ async function sendDiscordDM(userId, items) {
                     value: `$${item.price}`,
                     inline: true
                 })),
-                footer: { text: 'RTX — FiveM resources' }
+                footer: { text: 'FXAPWORLD — FiveM resources' }
             }
         ]
     };
@@ -404,5 +404,5 @@ async function sendDiscordDM(userId, items) {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`RTX API listening on port ${PORT}`);
+    console.log(`FXAPWORLD API listening on port ${PORT}`);
 });

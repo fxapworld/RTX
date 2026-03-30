@@ -1,4 +1,4 @@
-// Configuration for RTX — FiveM marketplace (GitHub Pages + optional backend)
+// Configuration for FXAPWORLD — FiveM marketplace (GitHub Pages + optional backend)
 
 const CONFIG = {
     // Deploy server.js (Render, Railway, Fly.io, VPS) and paste its public URL here — required for real payments.
@@ -26,7 +26,7 @@ const CONFIG = {
     },
 
     store: {
-        name: 'RTX',
+        name: 'FXAPWORLD',
         currency: 'USD',
         tagline: 'Premium FiveM resources'
     },

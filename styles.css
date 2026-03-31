@@ -517,6 +517,17 @@ main {
     transition: background-color 0.3s;
 }
 
+.checkout-btn-secondary {
+    margin-top: 0.6rem;
+    background: transparent;
+    border: 1px solid var(--accent-pink);
+    color: var(--accent-pink-soft);
+}
+
+.checkout-btn-secondary:hover {
+    background: rgba(227, 24, 55, 0.15);
+}
+
 .checkout-btn:hover {
     background-color: var(--accent-pink-soft);
 }

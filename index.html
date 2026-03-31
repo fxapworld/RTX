@@ -126,6 +126,7 @@
                 <span id="cartTotal">$0.00</span>
             </div>
             <button type="button" class="checkout-btn" onclick="proceedToCheckout()">Checkout</button>
+            <button type="button" class="checkout-btn checkout-btn-secondary" onclick="openPurchasesModal()">My Purchases</button>
         </div>
     </div>
 
@@ -156,6 +157,14 @@
         </div>
     </div>
 
+    <div id="purchasesModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="purchasesTitle">
+        <div class="modal-content">
+            <span class="close" onclick="closePurchasesModal()" aria-label="Close">&times;</span>
+            <h2 id="purchasesTitle">My Purchases</h2>
+            <div id="purchasesBody"></div>
+        </div>
+    </div>
+
     <div id="authModal" class="modal">
         <div class="modal-content auth-modal">
             <span class="close" onclick="closeAuthModal()">&times;</span>
@@ -182,10 +191,10 @@
         </div>
     </footer>
 
-    <script src="config.js?v=10"></script>
-    <script src="auth.js?v=10"></script>
-    <script src="cart.js?v=10"></script>
-    <script src="checkout.js?v=10"></script>
-    <script src="app.js?v=10"></script>
+    <script src="config.js?v=11"></script>
+    <script src="auth.js?v=11"></script>
+    <script src="cart.js?v=11"></script>
+    <script src="checkout.js?v=11"></script>
+    <script src="app.js?v=11"></script>
 </body>
 </html>

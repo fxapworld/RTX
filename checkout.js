@@ -49,6 +49,50 @@ function closeCheckout() {
     document.getElementById('checkoutModal').classList.remove('active');
 }
 
+function openPurchasesModal() {
+    const modal = document.getElementById('purchasesModal');
+    const body = document.getElementById('purchasesBody');
+    if (!modal || !body) return;
+
+    const orders = getOrders().slice().reverse();
+    if (!orders.length) {
+        body.innerHTML = '<p style="color:#ccc;">No purchases found on this browser yet.</p>';
+        modal.classList.add('active');
+        return;
+    }
+
+    body.innerHTML = orders.map((order) => {
+        const items = Array.isArray(order.items) ? order.items : [];
+        const links = items.filter((item) => item && item.downloadUrl && /^https?:\/\//i.test(item.downloadUrl));
+        const linksHtml = links.length
+            ? links.map((item) => `
+                <div style="margin:0.35rem 0;padding:0.5rem;border:1px solid #333;border-radius:6px;">
+                    <div style="font-weight:600;">${escapeCheckoutHtml(item.name || item.id || 'Package')}</div>
+                    <a href="${escapeCheckoutHtml(item.downloadUrl)}" target="_blank" rel="noopener" style="color:#ff2d95;word-break:break-all;">Download package</a>
+                </div>
+            `).join('')
+            : '<div style="color:#aaa;">No download URL stored for this order.</div>';
+
+        return `
+            <section style="border:1px solid #2a2830;border-radius:8px;padding:0.8rem;margin-bottom:0.8rem;">
+                <div style="display:flex;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;">
+                    <strong>${escapeCheckoutHtml(order.orderId || 'Order')}</strong>
+                    <span style="color:#aaa;">${escapeCheckoutHtml(new Date(order.date || Date.now()).toLocaleString())}</span>
+                </div>
+                <div style="color:#ccc;margin:0.4rem 0 0.6rem;">${escapeCheckoutHtml((order.provider || 'stripe').toUpperCase())}</div>
+                ${linksHtml}
+            </section>
+        `;
+    }).join('');
+
+    modal.classList.add('active');
+}
+
+function closePurchasesModal() {
+    const modal = document.getElementById('purchasesModal');
+    if (modal) modal.classList.remove('active');
+}
+
 function updatePaymentUI() {
     const api = getApiBase();
     const stripeConfigured = !!api;
@@ -365,6 +409,8 @@ function getOrders() {
 document.addEventListener('click', (e) => {
     const modal = document.getElementById('checkoutModal');
     if (e.target === modal) closeCheckout();
+    const purchasesModal = document.getElementById('purchasesModal');
+    if (e.target === purchasesModal) closePurchasesModal();
 });
 
 document.addEventListener('DOMContentLoaded', () => {

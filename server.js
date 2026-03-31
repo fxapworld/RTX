@@ -71,6 +71,10 @@ const CORS_EXTRA = (process.env.CORS_ORIGINS || '')
 
 const app = express();
 
+if (!DISCORD_PURCHASE_WEBHOOK_URL) {
+    console.warn('DISCORD_PURCHASE_WEBHOOK_URL is not set: purchase logs to Discord are disabled.');
+}
+
 app.use(cors({
     origin: (origin, cb) => {
         if (!origin) return cb(null, true);
@@ -99,7 +103,9 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
     if (event.type === 'checkout.session.completed') {
         let session = event.data.object;
         try {
-            session = await stripe.checkout.sessions.retrieve(session.id);
+            session = await stripe.checkout.sessions.retrieve(session.id, {
+                expand: ['line_items']
+            });
         } catch (e) {
             console.error('checkout.sessions.retrieve failed', e.message);
         }
@@ -110,6 +116,18 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
             }
         } catch (e) {
             console.error('metadata.items parse', e);
+        }
+        if ((!Array.isArray(items) || items.length === 0) && session.line_items && Array.isArray(session.line_items.data)) {
+            items = session.line_items.data.map((li) => ({
+                id: ((li.price && li.price.product_metadata && li.price.product_metadata.product_id) || '').toString(),
+                name: (li.description || (li.price && li.price.nickname) || 'Item').toString(),
+                price:
+                    li.amount_total != null
+                        ? Number(li.amount_total) / 100
+                        : li.amount_subtotal != null
+                        ? Number(li.amount_subtotal) / 100
+                        : null
+            }));
         }
         const userId = session.metadata && session.metadata.userId;
         await notifyPurchaseToDiscordWebhook(session, items);

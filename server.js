@@ -97,7 +97,12 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
     }
 
     if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
+        let session = event.data.object;
+        try {
+            session = await stripe.checkout.sessions.retrieve(session.id);
+        } catch (e) {
+            console.error('checkout.sessions.retrieve failed', e.message);
+        }
         let items = [];
         try {
             if (session.metadata && session.metadata.items) {
@@ -364,9 +369,29 @@ app.post('/api/create-payment-intent', async (req, res) => {
     }
 });
 
+/** Discord sometimes returns HTML (proxy/502) — never assume JSON on errors */
+async function discordResponseInfo(response) {
+    const text = await response.text();
+    let json = null;
+    if (text) {
+        try {
+            json = JSON.parse(text);
+        } catch (_) {
+            /* not JSON (e.g. <!doctype html>) */
+        }
+    }
+    return { text, json };
+}
+
 app.post('/api/discord/join', async (req, res) => {
     try {
+        if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
+            return res.status(503).json({ success: false, error: 'Discord bot not configured on server' });
+        }
         const { userId, accessToken } = req.body;
+        if (!userId || !accessToken) {
+            return res.status(400).json({ success: false, error: 'Missing userId or accessToken' });
+        }
         const response = await fetch(
             `https://discord.com/api/guilds/${DISCORD_GUILD_ID}/members/${userId}`,
             {
@@ -382,9 +407,13 @@ app.post('/api/discord/join', async (req, res) => {
         if (response.ok) {
             return res.json({ success: true, message: 'Successfully joined Discord server' });
         }
-        const error = await response.json();
-        console.error('Discord API error', error);
-        res.status(400).json({ success: false, error: 'Failed to join server' });
+        const { text, json } = await discordResponseInfo(response);
+        const msg =
+            json && json.message
+                ? json.message
+                : `Discord HTTP ${response.status}${text && text.startsWith('<') ? ' (HTML error page — check bot token & guild id)' : ''}`;
+        console.error('Discord join failed', response.status, json || text.slice(0, 400));
+        res.status(400).json({ success: false, error: msg });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to join Discord server' });
@@ -508,7 +537,14 @@ function escapeHtmlText(s) {
 
 async function sendPurchaseEmail(to, enrichedItems, sessionId) {
     const transport = getMailTransporter();
-    if (!transport || !to) return;
+    if (!to) {
+        console.warn('sendPurchaseEmail: no recipient email');
+        return;
+    }
+    if (!transport) {
+        console.warn('sendPurchaseEmail: set SMTP_USER and SMTP_PASS on Render (Gmail app password) to email download links');
+        return;
+    }
 
     const fromAddr = process.env.MAIL_FROM || `FXAPWORLD <${process.env.SMTP_USER}>`;
     const listHtml = enrichedItems
@@ -536,6 +572,7 @@ async function sendPurchaseEmail(to, enrichedItems, sessionId) {
         subject: 'Your FXAPWORLD purchase — download links',
         html
     });
+    console.log('purchase email sent OK for session', sessionId);
 }
 
 async function assignCustomerRole(userId) {
@@ -547,10 +584,12 @@ async function assignCustomerRole(userId) {
         headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` }
     });
 
-    if (!res.ok && res.status !== 204) {
-        const t = await res.text();
-        console.error('assignCustomerRole', res.status, t);
+    if (res.ok || res.status === 204) {
+        console.log('assignCustomerRole ok', userId);
+        return;
     }
+    const { text, json } = await discordResponseInfo(res);
+    console.error('assignCustomerRole failed', res.status, json || text.slice(0, 500));
 }
 
 async function processOrder(session, userId, items) {
@@ -577,7 +616,10 @@ async function processOrder(session, userId, items) {
             console.error('sendPurchaseEmail', error);
         }
     } else {
-        console.warn('No buyer email on Stripe session', session.id);
+        console.warn(
+            'No buyer email on Stripe session — enable customer email in Checkout or use session retrieve',
+            session.id
+        );
     }
 
     if (!userId || !DISCORD_BOT_TOKEN) return;
@@ -605,9 +647,10 @@ async function sendDiscordDM(userId, items) {
         body: JSON.stringify({ recipient_id: userId })
     });
 
-    const dmChannel = await dmChannelResponse.json();
-    if (!dmChannel.id) {
-        console.error('Failed to create DM channel', dmChannel);
+    const { text: dmText, json: dmJson } = await discordResponseInfo(dmChannelResponse);
+    const dmChannel = dmJson || {};
+    if (!dmChannelResponse.ok || !dmChannel.id) {
+        console.error('Discord DM channel failed', dmChannelResponse.status, dmJson || dmText.slice(0, 400));
         return;
     }
 

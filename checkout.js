@@ -87,7 +87,6 @@ async function startStripeCheckout() {
         return;
     }
 
-    const user = getUser();
     const btn = document.getElementById('stripe-checkout-btn');
     if (btn) {
         btn.disabled = true;
@@ -104,9 +103,7 @@ async function startStripeCheckout() {
                     name: i.name,
                     price: i.price,
                     downloadUrl: i.downloadUrl || ''
-                })),
-                userId: user ? user.id : '',
-                username: user ? user.username : ''
+                }))
             })
         });
 
@@ -274,7 +271,26 @@ function handleCheckoutReturn() {
     }
 }
 
+function renderDownloadLinks(items) {
+    const safeItems = Array.isArray(items) ? items : [];
+    const downloadable = safeItems.filter((item) => item && item.downloadUrl && /^https?:\/\//i.test(item.downloadUrl));
+    if (!downloadable.length) {
+        return `<p style="color:#ccc;margin:0 0 1rem;">No direct download link is set for this package yet. Contact support if needed.</p>`;
+    }
+    return `
+        <div style="text-align:left;max-height:240px;overflow:auto;margin:0 auto 1rem;">
+            ${downloadable.map((item) => `
+                <div style="margin-bottom:0.7rem;padding:0.55rem;border:1px solid #333;border-radius:6px;">
+                    <div style="color:#fff;font-weight:600;margin-bottom:0.35rem;">${escapeCheckoutHtml(item.name || item.id || 'Package')}</div>
+                    <a href="${escapeCheckoutHtml(item.downloadUrl)}" target="_blank" rel="noopener" style="color:#ff2d95;word-break:break-all;">Download package</a>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
 function showPaymentSuccess(order) {
+    const downloadHtml = renderDownloadLinks(order.items || []);
     const successMessage = `
         <div style="
             position: fixed;
@@ -292,8 +308,9 @@ function showPaymentSuccess(order) {
             <h2 style="color: #ff2d95; margin-bottom: 1rem;">Payment successful</h2>
             <p style="color: #fff; margin-bottom: 1rem;">Order #${escapeCheckoutHtml(order.orderId)}</p>
             <p style="color: #ccc; margin-bottom: 1.5rem;">
-                Download links were sent to the email you entered in Stripe. If you signed in with Discord, check your DMs and your new server role.
+                Your packages are ready. Use the download links below.
             </p>
+            ${downloadHtml}
             <button type="button" onclick="this.closest('[data-rtx-overlay]').remove()" style="
                 background-color: #ff2d95;
                 color: #0a0a0a;

@@ -110,17 +110,10 @@ function proceedToCheckout() {
         showNotification('Your cart is empty!', 'error');
         return;
     }
-    
-    // Check if user is logged in
-    const user = getUser();
-    if (!user) {
-        showAuthModal();
-        return;
-    }
-    
+
     // Close cart sidebar
     toggleCart();
-    
+
     // Open checkout modal
     openCheckout();
 }

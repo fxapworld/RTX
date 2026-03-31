@@ -9,7 +9,7 @@ const CONFIG = {
     discord: {
         clientId: '1439043142086164633',
         redirectUri: 'https://fxapworld.com/',
-        scope: 'identify guilds.join',
+        scope: 'identify',
         guildId: '1395934062056833156'
     },
 

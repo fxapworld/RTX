@@ -102,59 +102,17 @@ async function fetchDiscordUser(accessToken) {
             avatar: userData.avatar,
             accessToken: accessToken
         };
-        
+
         saveUser(user);
-        
-        // Try to join Discord server
-        await joinDiscordServer(user);
-        
+
         // Update UI
         checkAuthStatus();
         closeAuthModal();
         showNotification(`Welcome, ${user.username}!`);
-        
+
     } catch (error) {
         console.error('Error fetching Discord user:', error);
         showNotification('Failed to login with Discord', 'error');
-    }
-}
-
-function getApiBaseUrl() {
-    let url = typeof CONFIG !== 'undefined' && CONFIG.apiBaseUrl ? CONFIG.apiBaseUrl : '';
-    if (!url || url === 'YOUR_API_URL') {
-        if (typeof location !== 'undefined' && /\.github\.io$/i.test(location.hostname)) {
-            return 'https://rtx-api.onrender.com';
-        }
-        return '';
-    }
-    return url.replace(/\/$/, '');
-}
-
-// Join Discord server (OAuth guilds.join + backend bot PUT /members)
-async function joinDiscordServer(user) {
-    const api = getApiBaseUrl();
-    if (!api) {
-        showNotification('Set apiBaseUrl in config.js so we can add you to Discord.', 'error');
-        return;
-    }
-    try {
-        const res = await fetch(`${api}/api/discord/join`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: user.id,
-                accessToken: user.accessToken
-            })
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.success) {
-            showNotification('You joined the FXAPWORLD Discord — you can checkout when ready.');
-        } else {
-            showNotification(data.error || 'Could not add you to the server (check bot permissions).', 'error');
-        }
-    } catch (error) {
-        console.error('Error joining Discord server:', error);
-        showNotification('Discord join request failed', 'error');
     }
 }
 

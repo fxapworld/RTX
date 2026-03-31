@@ -594,47 +594,8 @@ async function assignCustomerRole(userId) {
 
 async function processOrder(session, userId, items) {
     if (!items || !items.length) return;
-    console.log(`Processing order session=${session.id} userId=${userId || '(none)'}`, items);
-
-    let enriched;
-    try {
-        enriched = await enrichItemsWithDownloads(items);
-    } catch (e) {
-        console.error('processOrder enrich', e);
-        enriched = items.map(normalizeMetaItem);
-    }
-
-    const email =
-        (session.customer_details && session.customer_details.email) ||
-        session.customer_email ||
-        '';
-
-    if (email) {
-        try {
-            await sendPurchaseEmail(email, enriched, session.id);
-        } catch (error) {
-            console.error('sendPurchaseEmail', error);
-        }
-    } else {
-        console.warn(
-            'No buyer email on Stripe session — enable customer email in Checkout or use session retrieve',
-            session.id
-        );
-    }
-
-    if (!userId || !DISCORD_BOT_TOKEN) return;
-
-    try {
-        await assignCustomerRole(userId);
-    } catch (error) {
-        console.error('assignCustomerRole', error);
-    }
-
-    try {
-        await sendDiscordDM(userId, enriched);
-    } catch (error) {
-        console.error('sendDiscordDM', error);
-    }
+    console.log(`Order paid session=${session.id}`, { items: items.length, userId: userId || '' });
+    // Delivery is now handled directly on the storefront success screen.
 }
 
 async function sendDiscordDM(userId, items) {

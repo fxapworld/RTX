@@ -189,6 +189,12 @@
             return str.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
         }
 
+        function formatPriceUsd(amount) {
+            const n = Number(amount);
+            if (!Number.isFinite(n) || n === 0) return 'FREE';
+            return `$${n.toFixed(2)}`;
+        }
+
         function formToProduct(data) {
             const p = {
                 id: data.id.trim(),
@@ -212,7 +218,7 @@
                 <tr>
                     <td>${escapeHtml(p.id)}</td>
                     <td>${escapeHtml(p.name)}</td>
-                    <td>$${Number(p.price).toFixed(2)}</td>
+                    <td>${formatPriceUsd(p.price)}</td>
                     <td>
                         <button type="button" data-edit-idx="${i}">Edit</button>
                         <button type="button" data-del-idx="${i}">Delete</button>

@@ -24,11 +24,11 @@ function displayCheckoutItems() {
     checkoutItems.innerHTML = cart.map(item => `
         <div class="checkout-item">
             <span>${escapeCheckoutHtml(item.name)}</span>
-            <span>$${item.price.toFixed(2)}</span>
+            <span>${formatPriceUsd(item.price)}</span>
         </div>
     `).join('');
 
-    checkoutTotal.textContent = `$${total.toFixed(2)}`;
+    checkoutTotal.textContent = formatPriceUsd(total);
 }
 
 function escapeCheckoutHtml(s) {

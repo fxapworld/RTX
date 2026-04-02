@@ -438,9 +438,15 @@ app.post('/api/discord/join', async (req, res) => {
     }
 });
 
+function formatUsdOrFree(n) {
+    const x = Number(n);
+    if (!Number.isFinite(x) || x === 0) return 'FREE';
+    return `$${x.toFixed(2)}`;
+}
+
 function formatItemLine(item) {
     if (typeof item === 'string') return `• \`${item}\``;
-    if (item && item.name) return `• **${item.name}** — $${Number(item.price).toFixed(2)}`;
+    if (item && item.name) return `• **${item.name}** — ${formatUsdOrFree(item.price)}`;
     return JSON.stringify(item);
 }
 
@@ -448,7 +454,11 @@ async function notifyPurchaseToDiscordWebhook(session, items) {
     if (!DISCORD_PURCHASE_WEBHOOK_URL) return;
 
     const total =
-        session.amount_total != null ? (session.amount_total / 100).toFixed(2) : '?';
+        session.amount_total != null
+            ? session.amount_total === 0
+                ? 'FREE'
+                : (session.amount_total / 100).toFixed(2)
+            : '?';
     const currency = (session.currency || 'usd').toUpperCase();
     const email =
         (session.customer_details && session.customer_details.email) ||
@@ -468,7 +478,11 @@ async function notifyPurchaseToDiscordWebhook(session, items) {
         description: `Stripe Checkout completed.`,
         color: 0xff2d95,
         fields: [
-            { name: 'Amount', value: `${currency} ${total}`, inline: true },
+            {
+                name: 'Amount',
+                value: total === 'FREE' ? 'FREE' : `${currency} ${total}`,
+                inline: true
+            },
             { name: 'Session', value: `\`${session.id}\``, inline: true },
             { name: 'Buyer email', value: String(email).slice(0, 1024), inline: false },
             {
@@ -634,7 +648,7 @@ async function sendDiscordDM(userId, items) {
     }
 
     const lines = items.map((item) => {
-        const price = item.price != null ? ` — $${Number(item.price).toFixed(2)}` : '';
+        const price = item.price != null ? ` — ${formatUsdOrFree(item.price)}` : '';
         const link = item.downloadUrl && /^https?:\/\//i.test(item.downloadUrl)
             ? `\n  ${item.downloadUrl}`
             : '\n  (download link in your email)';

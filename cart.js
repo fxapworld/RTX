@@ -1,5 +1,12 @@
 let cart = [];
 
+/** Show FREE instead of $0.00 for storefront display */
+function formatPriceUsd(amount) {
+    const n = Number(amount);
+    if (!Number.isFinite(n) || n === 0) return 'FREE';
+    return `$${n.toFixed(2)}`;
+}
+
 function loadCart() {
     let savedCart = localStorage.getItem('rtxCart');
     if (!savedCart && localStorage.getItem('fxapCart')) {
@@ -74,7 +81,7 @@ function updateCartDisplay() {
                 <img src="${item.image}" alt="${item.name}" class="cart-item-image">
                 <div class="cart-item-details">
                     <div class="cart-item-name">${item.name}</div>
-                    <div class="cart-item-price">$${item.price.toFixed(2)}</div>
+                    <div class="cart-item-price">${formatPriceUsd(item.price)}</div>
                     <button class="remove-item-btn" onclick="removeFromCart('${item.id}')">Remove</button>
                 </div>
             </div>
@@ -83,7 +90,7 @@ function updateCartDisplay() {
     
     // Update total
     const total = cart.reduce((sum, item) => sum + item.price, 0);
-    cartTotal.textContent = `$${total.toFixed(2)}`;
+    cartTotal.textContent = formatPriceUsd(total);
 }
 
 // Toggle cart sidebar

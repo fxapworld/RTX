@@ -71,7 +71,7 @@ function openProductModal(productId) {
         <p style="color: #ccc; line-height: 1.65;">${escapeHtml(desc)}</p>
         ${product.downloadUrl ? `<p style="margin-top: 1rem; font-size: 0.9rem; color: var(--muted);">Download is provided after purchase (configure delivery in your backend).</p>` : ''}
         <div class="product-detail-actions">
-            <span class="product-price" style="font-size: 1.75rem;">$${product.price.toFixed(2)}</span>
+            <span class="product-price" style="font-size: 1.75rem;">${formatPriceUsd(product.price)}</span>
             <button type="button" class="add-to-cart-btn" data-product-id="">Add to Cart</button>
             <button type="button" class="btn-outline" data-close-modal>Close</button>
         </div>
@@ -110,7 +110,7 @@ function buildProductCardHTML(product, sliderMode = false) {
                 <h3 class="product-name">${escapeHtml(product.name)}</h3>
                 <p class="product-description">${escapeHtml(product.description)}</p>
                 <div class="product-footer">
-                    <span class="product-price">$${product.price.toFixed(2)}</span>
+                    <span class="product-price">${formatPriceUsd(product.price)}</span>
                     <button type="button" class="add-to-cart-btn">Add to Cart</button>
                 </div>
             </div>

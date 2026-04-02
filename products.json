@@ -62,6 +62,20 @@
         "weapons"
       ],
       "downloadUrl": "https://files.catbox.moe/2lqns3.rar"
+    },
+    {
+      "id": "fxap-wasabicrutch",
+      "name": "WASABI CRUTCH",
+      "category": "scripts",
+      "subcategory": "WASABI",
+      "price": 0,
+      "description": "OPEN SOURCE",
+      "image": "https://tse4.mm.bing.net/th/id/OIP.25NU2NB43CDOEvJj88WD8wHaEK?rs=1&pid=ImgDetMain&o=7&rm=3",
+      "tags": [
+        "qbcore",
+        "esx"
+      ],
+      "downloadUrl": "https://files.catbox.moe/iqdv22.zip"
     }
   ]
 }
